@@ -1,5 +1,6 @@
 from flask import Flask
 
+from . import models
 from .config.settings import get_config
 from .extensions import configure_cloudinary, cors, db, jwt, migrate
 from .routes import register_blueprints
