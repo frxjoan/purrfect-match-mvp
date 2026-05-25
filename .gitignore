@@ -1,0 +1,46 @@
+# Node.js / React / Vite
+node_modules/
+frontend/node_modules/
+dist/
+build/
+frontend/dist/
+frontend/.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.sqlite3
+.venv/
+venv/
+env/
+backend/.pytest_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+
+# Testing / coverage
+.coverage
+coverage/
+htmlcov/
+pytestdebug.log
+
+# Docker
+*.pid
+postgres_data/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Misc
+README
