@@ -18,7 +18,7 @@ class CatListing(db.Model):
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    breeder_id = db.Column(db.Integer, db.ForeignKey('breeder_profiles.id'), nullable=False)
+    breeder_id = db.Column(db.Integer, db.ForeignKey('breeder_profiles.id', ondelete='CASCADE'), nullable=False)
     title = db.Column(db.String(150), nullable=False)
     breed = db.Column(db.String(150), nullable=False)
     age_months = db.Column(db.Integer, nullable=False)
@@ -29,3 +29,21 @@ class CatListing(db.Model):
     status = db.Column(db.String(20), nullable=False, default='available')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    db.CheckConstraint('age_months >= 0', name='ck_cat_listing_age_positive'),
+    db.CheckConstraint('price >= 0', name='ck_cat_listing_price_positive')
+
+    breeder = db.relationship(
+        'BreederProfile',
+        back_populates='listings',
+    )
+    images = db.relationship(
+        'ListingImage',
+        back_populates='listing',
+        cascade='all, delete-orphan',
+    )
+    conversations = db.relationship(
+        'Conversation',
+        back_populates='listing',
+        cascade='all, delete-orphan',
+    )

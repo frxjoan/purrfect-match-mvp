@@ -8,10 +8,10 @@ class User(db.Model):
 
     __table_args__ = (
         db.CheckConstraint(
-                "role IN ('customer', 'breeder', 'admin')",
-                name='ck_users_role_valid',
-            ),
-        )
+            "role IN ('customer', 'breeder', 'admin')",
+            name='ck_users_role_valid',
+        ),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
@@ -24,3 +24,29 @@ class User(db.Model):
     profile_picture_url = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    breeder_profile = db.relationship(
+        'BreederProfile',
+        back_populates='user',
+        uselist=False,
+        cascade='all, delete-orphan',
+        single_parent=True,
+    )
+    conversations = db.relationship(
+        'Conversation',
+        back_populates='customer',
+        foreign_keys='Conversation.customer_id',
+        cascade='all, delete-orphan',
+    )
+    messages = db.relationship(
+        'Message',
+        back_populates='sender',
+        foreign_keys='Message.sender_id',
+        cascade='all, delete-orphan',
+    )
+    reviews = db.relationship(
+        'Review',
+        back_populates='reviewer',
+        foreign_keys='Review.reviewer_id',
+        cascade='all, delete-orphan',
+    )
