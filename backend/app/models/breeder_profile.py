@@ -44,3 +44,9 @@ class BreederProfile(db.Model):
         back_populates='breeder',
         cascade='all, delete-orphan',
     )
+
+def is_verified(self):
+    return self.certification_status == "verified"
+
+def can_create_listing(self):
+    return self.is_verified()
