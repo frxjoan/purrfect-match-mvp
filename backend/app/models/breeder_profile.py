@@ -45,23 +45,35 @@ class BreederProfile(db.Model):
         cascade='all, delete-orphan',
     )
 
-def is_verified(self):
-    return self.certification_status == "verified"
+    def is_verified(self):
+        return self.certification_status == "verified"
 
-def can_create_listing(self):
-    return self.is_verified()
+    def can_create_listing(self):
+        return self.is_verified()
 
-def to_dict(self):
-    return {
-        "id": self.id,
-        "user_id": self.user_id,
-        "business_name": self.business_name,
-        "bio": self.bio,
-        "location": self.location,
-        "certification_status": self.certification_status,
-        "certification_document_url": self.certification_document_url,
-        "certification_admin_comment": self.certification_admin_comment,
-        "verified_at": self.verified_at.isoformat() if self.verified_at else None,
-        "created_at": self.created_at.isoformat() if self.created_at else None,
-        "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-    }
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "business_name": self.business_name,
+            "bio": self.bio,
+            "location": self.location,
+            "certification_status": self.certification_status,
+            "certification_document_url": self.certification_document_url,
+            "certification_admin_comment": self.certification_admin_comment,
+            "verified_at": (
+                self.verified_at.isoformat()
+                if self.verified_at
+                else None
+            ),
+            "created_at": (
+                self.created_at.isoformat()
+                if self.created_at
+                else None
+            ),
+            "updated_at": (
+                self.updated_at.isoformat()
+                if self.updated_at
+                else None
+            ),
+        }
