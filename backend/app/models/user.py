@@ -74,17 +74,17 @@ class User(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-def is_admin(self):
-    return self.role == "admin"
+    def is_admin(self):
+        return self.role == "admin"
 
-def is_breeder(self):
-    return self.role == "breeder"
+    def is_breeder(self):
+        return self.role == "breeder"
 
-def can_access_admin_panel(self):
-    return self.is_admin()
+    def can_access_admin_panel(self):
+        return self.is_admin()
 
-def can_browse_listings(self):
-    return True
+    def can_browse_listings(self):
+        return True
 
-def can_contact_breeder(self):
-    return self.role in ["customer", "breeder"]
+    def can_contact_breeder(self):
+        return self.role in ["customer", "breeder"]
