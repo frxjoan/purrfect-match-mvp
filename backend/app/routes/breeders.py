@@ -1,9 +1,12 @@
+from dbm import error
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.extensions import db
 from app.models.breeder_profile import BreederProfile
 from app.models.user import User
+from app.services.cloudinary_service import upload_certification_document
 
 breeders_bp = Blueprint("breeders", __name__, url_prefix="/api/v1/breeders")
 
@@ -23,7 +26,16 @@ def apply_as_breeder():
             "error": {"message": "Breeder profile already exists."},
         }), 409
 
-    data = request.get_json() or {}
+    data = request.form
+    certification_document = request.files.get("certification_document")
+
+    if not certification_document:
+        return jsonify({
+            "success": False,
+            "error": {
+                "message": "Certification document is required.",
+            },
+        }), 400
 
     required_fields = ["business_name", "location"]
     missing_fields = [field for field in required_fields if not data.get(field)]
@@ -36,13 +48,32 @@ def apply_as_breeder():
                 "fields": missing_fields,
             },
         }), 400
+    
+    try:
+        certification_document_url = upload_certification_document(
+            certification_document
+        )
+    except ValueError as error:
+        return jsonify({
+            "success": False,
+            "error": {
+                "message": str(error),
+            },
+        }), 400
+    except Exception:
+        return jsonify({
+            "success": False,
+            "error": {
+                "message": "Certification document upload failed.",
+            },
+        }), 500
 
     breeder_profile = BreederProfile(
         user_id=user.id,
         business_name=data["business_name"].strip(),
         bio=data.get("bio"),
         location=data["location"].strip(),
-        certification_document_url=data.get("certification_document_url"),
+        certification_document_url=certification_document_url,
         certification_status="pending",
     )
 
