@@ -15,6 +15,14 @@ class CatListing(db.Model):
             "gender IN ('male', 'female')",
             name='ck_cat_gender_valid',
         ),
+        db.CheckConstraint(
+            "age_months >= 0",
+            name='ck_cat_listing_age_positive',
+        ),
+        db.CheckConstraint(
+            "price >= 0",
+            name='ck_cat_listing_price_positive',
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -29,9 +37,6 @@ class CatListing(db.Model):
     status = db.Column(db.String(20), nullable=False, default='available')
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    db.CheckConstraint('age_months >= 0', name='ck_cat_listing_age_positive'),
-    db.CheckConstraint('price >= 0', name='ck_cat_listing_price_positive')
 
     breeder = db.relationship(
         'BreederProfile',
@@ -47,3 +52,20 @@ class CatListing(db.Model):
         back_populates='listing',
         cascade='all, delete-orphan',
     )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "breeder_id": self.breeder_id,
+            "title": self.title,
+            "breed": self.breed,
+            "age_months": self.age_months,
+            "gender": self.gender,
+            "price": float(self.price),
+            "location": self.location,
+            "description": self.description,
+            "status": self.status,
+            "images": [image.to_dict() for image in self.images],
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+        }

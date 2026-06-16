@@ -15,3 +15,12 @@ class ListingImage(db.Model):
         'CatListing',
         back_populates='images',
     )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "listing_id": self.listing_id,
+            "image_url": self.image_url,
+            "is_main": self.is_main,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
