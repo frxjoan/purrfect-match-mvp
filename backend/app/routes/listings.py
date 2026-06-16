@@ -18,21 +18,93 @@ def list_listings():
     location = request.args.get("location")
     min_price = request.args.get("min_price")
     max_price = request.args.get("max_price")
+    age_max = request.args.get("age_max")
     gender = request.args.get("gender")
+    status = request.args.get("status")
+    sort = request.args.get("sort", "newest")
 
     if breed:
         query = query.filter(CatListing.breed.ilike(f"%{breed}%"))
+
     if location:
         query = query.filter(CatListing.location.ilike(f"%{location}%"))
-    if min_price:
-        query = query.filter(CatListing.price >= min_price)
-    if max_price:
-        query = query.filter(CatListing.price <= max_price)
+
     if gender:
+        if gender not in ["male", "female"]:
+            return jsonify({
+                "success": False,
+                "error": {"message": "Gender must be 'male' or 'female'."}
+            }), 400
+
         query = query.filter(CatListing.gender == gender)
 
+    if min_price:
+        try:
+            min_price = float(min_price)
+            if min_price < 0:
+                raise ValueError
+            query = query.filter(CatListing.price >= min_price)
+        except ValueError:
+            return jsonify({
+                "success": False,
+                "error": {"message": "min_price must be a positive number."}
+            }), 400
+
+    if max_price:
+        try:
+            max_price = float(max_price)
+            if max_price < 0:
+                raise ValueError
+            query = query.filter(CatListing.price <= max_price)
+        except ValueError:
+            return jsonify({
+                "success": False,
+                "error": {"message": "max_price must be a positive number."}
+            }), 400
+
+    if age_max:
+        try:
+            age_max = int(age_max)
+            if age_max < 0:
+                raise ValueError
+            query = query.filter(CatListing.age_months <= age_max)
+        except ValueError:
+            return jsonify({
+                "success": False,
+                "error": {"message": "age_max must be a positive integer."}
+            }), 400
+
+    if status:
+        allowed_statuses = ["available", "reserved", "sold"]
+
+        if status not in allowed_statuses:
+            return jsonify({
+                "success": False,
+                "error": {
+                    "message": "Status must be available, reserved or sold."
+                }
+            }), 400
+
+        query = query.filter(CatListing.status == status)
+
+    if sort == "price_asc":
+        query = query.order_by(CatListing.price.asc())
+    elif sort == "price_desc":
+        query = query.order_by(CatListing.price.desc())
+    elif sort == "oldest":
+        query = query.order_by(CatListing.created_at.asc())
+    else:
+        query = query.order_by(CatListing.created_at.desc())
+
     listings = query.all()
-    return jsonify([listing.to_dict() for listing in listings]), 200
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "count": len(listings),
+            "listings": [listing.to_dict() for listing in listings]
+        }
+    }), 200
 
 
 @listings_bp.get("/<int:listing_id>")
