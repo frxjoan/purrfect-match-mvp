@@ -26,7 +26,24 @@ class Conversation(db.Model):
         back_populates='conversations',
     )
     messages = db.relationship(
-        'Message',
-        back_populates='conversation',
-        cascade='all, delete-orphan',
+        "Message",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="Message.created_at.asc()",
     )
+
+    def to_dict(self, include_messages=False):
+        data = {
+            "id": self.id,
+            "customer_id": self.customer_id,
+            "breeder_id": self.breeder_id,
+            "listing_id": self.listing_id,
+            "listing_title": self.listing.title if self.listing else None,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+        if include_messages:
+            data["messages"] = [message.to_dict() for message in self.messages]
+
+        return data

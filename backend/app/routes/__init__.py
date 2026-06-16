@@ -4,6 +4,7 @@ from .breeders import breeders_bp
 from .conversations import conversations_bp
 from .health import health_bp
 from .listings import listings_bp
+from .messages import messages_bp
 from .users import users_bp
 
 
@@ -15,6 +16,7 @@ def register_blueprints(app):
     breeders_bp,
     listings_bp,
     conversations_bp,
+    messages_bp,
     admin_bp,
   ]:
     app.register_blueprint(blueprint)
