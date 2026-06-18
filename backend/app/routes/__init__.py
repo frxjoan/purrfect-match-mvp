@@ -9,14 +9,11 @@ from .users import users_bp
 
 
 def register_blueprints(app):
-  for blueprint in [
-    health_bp,
-    auth_bp,
-    users_bp,
-    breeders_bp,
-    listings_bp,
-    conversations_bp,
-    messages_bp,
-    admin_bp,
-  ]:
-    app.register_blueprint(blueprint)
+    app.register_blueprint(health_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(breeders_bp)
+    app.register_blueprint(listings_bp)
+    app.register_blueprint(conversations_bp)
+    app.register_blueprint(messages_bp)
+    app.register_blueprint(admin_bp)

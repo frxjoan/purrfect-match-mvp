@@ -22,8 +22,8 @@ class BreederProfile(db.Model):
     certification_document_url = db.Column(db.Text, nullable=True)
     certification_admin_comment = db.Column(db.Text, nullable=True)
     verified_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC))
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC), onupdate=datetime.now(datetime.UTC))
 
     user = db.relationship(
         'User',

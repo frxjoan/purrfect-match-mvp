@@ -6,7 +6,10 @@ load_dotenv()
 
 
 def _database_url():
-    database_url = os.getenv('DATABASE_URL')
+    database_url = os.getenv(
+        'DATABASE_URL',
+        'postgresql://postgres:postgres@localhost:5432/purrfect_match',
+    )
 
     if database_url and database_url.startswith('postgres://'):
         return database_url.replace('postgres://', 'postgresql://', 1)

@@ -23,8 +23,8 @@ class User(db.Model):
     role = db.Column(db.String(20), nullable=False, default='customer')
     phone_number = db.Column(db.String(30), nullable=True)
     profile_picture_url = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC))
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC), onupdate=datetime.now(datetime.UTC))
 
     breeder_profile = db.relationship(
         'BreederProfile',

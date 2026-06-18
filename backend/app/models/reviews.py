@@ -8,6 +8,7 @@ class Review(db.Model):
 
     __table_args__ = (
         db.CheckConstraint('rating >= 1 AND rating <= 5', name='ck_reviews_rating_range'),
+        db.UniqueConstraint('reviewer_id', 'breeder_id', name='uq_reviewer_breeder_review'),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -15,10 +16,8 @@ class Review(db.Model):
     breeder_id = db.Column(db.Integer, db.ForeignKey('breeder_profiles.id', ondelete='CASCADE'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     comment = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    db.UniqueConstraint('reviewer_id', 'breeder_id', name='uq_reviewer_breeder_review')
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC))
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC), onupdate=datetime.now(datetime.UTC))
 
     reviewer = db.relationship(
         'User',
@@ -29,4 +28,15 @@ class Review(db.Model):
         'BreederProfile',
         back_populates='reviews',
     )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "reviewer_id": self.reviewer_id,
+            "breeder_id": self.breeder_id,
+            "rating": self.rating,
+            "comment": self.comment,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
     

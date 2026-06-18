@@ -84,7 +84,7 @@ def approve_certification(breeder_id):
     data = request.get_json() or {}
 
     breeder.certification_status = "verified"
-    breeder.verified_at = datetime.utcnow()
+    breeder.verified_at = datetime.now(datetime.UTC)()
     breeder.certification_admin_comment = data.get("comment")
 
     db.session.commit()

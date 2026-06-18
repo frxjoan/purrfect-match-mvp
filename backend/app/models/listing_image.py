@@ -9,7 +9,7 @@ class ListingImage(db.Model):
     listing_id = db.Column(db.Integer, db.ForeignKey('cat_listings.id', ondelete='CASCADE'), nullable=False)
     image_url = db.Column(db.Text, nullable=False)
     is_main = db.Column(db.Boolean, nullable=False, default=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC))
 
     listing = db.relationship(
         'CatListing',

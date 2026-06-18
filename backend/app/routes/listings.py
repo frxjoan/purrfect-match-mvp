@@ -152,14 +152,35 @@ def create_listing():
         return jsonify({"success": False, "error": {"message": "At least one image is required."}}), 400
 
     try:
+        age_months = int(data.get("age_months"))
+        price = float(data.get("price"))
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "error": {"message": "age_months and price must be valid numbers."},
+        }), 400
+
+    if age_months < 0 or price < 0:
+        return jsonify({
+            "success": False,
+            "error": {"message": "age_months and price must be positive values."},
+        }), 400
+
+    if data.get("gender") not in ["male", "female"]:
+        return jsonify({
+            "success": False,
+            "error": {"message": "Gender must be 'male' or 'female'."},
+        }), 400
+
+    try:
         listing = CatListing(
             breeder_id=user.breeder_profile.id,
-            title=data.get("title"),
-            breed=data.get("breed"),
-            age_months=int(data.get("age_months")),
+            title=data.get("title").strip(),
+            breed=data.get("breed").strip(),
+            age_months=age_months,
             gender=data.get("gender"),
-            price=data.get("price"),
-            location=data.get("location"),
+            price=price,
+            location=data.get("location").strip(),
             description=data.get("description"),
             status="available",
         )
@@ -185,9 +206,9 @@ def create_listing():
             "data": listing.to_dict(),
         }), 201
 
-    except Exception as error:
+    except Exception:
         db.session.rollback()
         return jsonify({
             "success": False,
-            "error": {"message": str(error)},
+            "error": {"message": "Listing creation failed."},
         }), 500

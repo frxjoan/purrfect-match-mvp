@@ -80,7 +80,15 @@ def start_conversation():
             "error": {"message": "listing_id is required."},
         }), 400
 
-    listing = db.session.get(CatListing, int(listing_id))
+    try:
+        listing_id = int(listing_id)
+    except (TypeError, ValueError):
+        return jsonify({
+            "success": False,
+            "error": {"message": "listing_id must be an integer."},
+        }), 400
+
+    listing = db.session.get(CatListing, listing_id)
 
     if not listing or listing.status == "archived":
         return jsonify({
@@ -222,7 +230,7 @@ def send_message(conversation_id):
         content=content,
     )
 
-    conversation.updated_at = datetime.utcnow()
+    conversation.updated_at = datetime.now(datetime.UTC)()
 
     db.session.add(message)
     db.session.commit()

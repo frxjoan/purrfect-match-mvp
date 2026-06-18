@@ -35,8 +35,8 @@ class CatListing(db.Model):
     location = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(20), nullable=False, default='available')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC))
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC), onupdate=datetime.now(datetime.UTC))
 
     breeder = db.relationship(
         'BreederProfile',
@@ -61,11 +61,11 @@ class CatListing(db.Model):
             "breed": self.breed,
             "age_months": self.age_months,
             "gender": self.gender,
-            "price": float(self.price),
+            "price": float(self.price) if self.price is not None else None,
             "location": self.location,
             "description": self.description,
             "status": self.status,
             "images": [image.to_dict() for image in self.images],
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
