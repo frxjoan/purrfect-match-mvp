@@ -10,7 +10,7 @@ def app():
     {
       'TESTING': True,
       'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
-      'JWT_SECRET_KEY': 'test-secret',
+      'JWT_SECRET_KEY': 'test-secret-key-with-at-least-32-characters',
       'CLOUDINARY_CLOUD_NAME': 'demo',
       'CLOUDINARY_API_KEY': 'demo-key',
       'CLOUDINARY_API_SECRET': 'demo-secret',

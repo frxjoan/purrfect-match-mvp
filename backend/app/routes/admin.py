@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -84,7 +84,7 @@ def approve_certification(breeder_id):
     data = request.get_json() or {}
 
     breeder.certification_status = "verified"
-    breeder.verified_at = datetime.now(datetime.UTC)()
+    breeder.verified_at = datetime.now(timezone.utc)
     breeder.certification_admin_comment = data.get("comment")
 
     db.session.commit()

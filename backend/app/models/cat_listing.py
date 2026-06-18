@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..extensions import db
 
@@ -35,8 +35,13 @@ class CatListing(db.Model):
     location = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(20), nullable=False, default='available')
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC))
-    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.now(datetime.UTC), onupdate=datetime.now(datetime.UTC))
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
     breeder = db.relationship(
         'BreederProfile',

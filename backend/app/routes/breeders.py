@@ -3,10 +3,28 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.extensions import db
 from app.models.breeder_profile import BreederProfile
+from app.models.reviews import Review
 from app.models.user import User
 from app.services.cloudinary_service import upload_certification_document
 
 breeders_bp = Blueprint("breeders", __name__, url_prefix="/api/v1/breeders")
+
+
+def parse_rating(value):
+    if isinstance(value, bool):
+        return None
+
+    if isinstance(value, int):
+        rating = value
+    elif isinstance(value, str) and value.strip().isdigit():
+        rating = int(value)
+    else:
+        return None
+
+    if rating < 1 or rating > 5:
+        return None
+
+    return rating
 
 
 @breeders_bp.post("/apply")
@@ -160,3 +178,91 @@ def get_public_breeder_profile(breeder_id):
             "breeder_profile": breeder_profile.to_dict(),
         },
     }), 200
+
+
+@breeders_bp.get("/<int:breeder_id>/reviews")
+def list_breeder_reviews(breeder_id):
+    breeder_profile = db.session.get(BreederProfile, breeder_id)
+
+    if not breeder_profile:
+        return jsonify({
+            "success": False,
+            "error": {"message": "Breeder profile not found."},
+        }), 404
+
+    reviews = Review.query.filter_by(
+        breeder_id=breeder_profile.id
+    ).order_by(Review.created_at.desc()).all()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "count": len(reviews),
+            "reviews": [review.to_dict() for review in reviews],
+        },
+    }), 200
+
+
+@breeders_bp.post("/<int:breeder_id>/reviews")
+@jwt_required()
+def create_breeder_review(breeder_id):
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+
+    if not user:
+        return jsonify({"success": False, "error": {"message": "User not found."}}), 404
+
+    breeder_profile = db.session.get(BreederProfile, breeder_id)
+
+    if not breeder_profile:
+        return jsonify({
+            "success": False,
+            "error": {"message": "Breeder profile not found."},
+        }), 404
+
+    if user.breeder_profile and user.breeder_profile.id == breeder_profile.id:
+        return jsonify({
+            "success": False,
+            "error": {"message": "You cannot review your own breeder profile."},
+        }), 403
+
+    data = request.get_json() or {}
+    rating = parse_rating(data.get("rating"))
+
+    if rating is None:
+        return jsonify({
+            "success": False,
+            "error": {"message": "rating must be an integer between 1 and 5."},
+        }), 400
+
+    existing_review = Review.query.filter_by(
+        reviewer_id=user.id,
+        breeder_id=breeder_profile.id,
+    ).first()
+
+    if existing_review:
+        return jsonify({
+            "success": False,
+            "error": {"message": "You have already reviewed this breeder."},
+        }), 409
+
+    comment = data.get("comment")
+    if isinstance(comment, str):
+        comment = comment.strip() or None
+
+    review = Review(
+        reviewer_id=user.id,
+        breeder_id=breeder_profile.id,
+        rating=rating,
+        comment=comment,
+    )
+
+    db.session.add(review)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "review": review.to_dict(),
+        },
+    }), 201

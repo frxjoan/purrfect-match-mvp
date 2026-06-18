@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -230,7 +230,7 @@ def send_message(conversation_id):
         content=content,
     )
 
-    conversation.updated_at = datetime.now(datetime.UTC)()
+    conversation.updated_at = datetime.now(timezone.utc)
 
     db.session.add(message)
     db.session.commit()
