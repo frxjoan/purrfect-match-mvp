@@ -6,6 +6,7 @@ from .conversation import Conversation
 from .message import Message
 from .reviews import Review
 from .listing_report import ListingReport
+from .account_restriction import AccountRestriction
 
 __all__ = [
     'User',
@@ -16,4 +17,5 @@ __all__ = [
     'Message',
     'Review',
     'ListingReport',
+    'AccountRestriction',
 ]

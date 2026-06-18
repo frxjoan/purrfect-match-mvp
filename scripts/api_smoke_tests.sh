@@ -257,6 +257,7 @@ pass "customer login"
 
 register_user "${BREEDER_EMAIL}" "Breeder"
 BREEDER_TOKEN="$(login_user "${BREEDER_EMAIL}")"
+BREEDER_USER_ID="$(user_id_for_email "${BREEDER_EMAIL}")"
 pass "breeder login"
 
 register_user "${UNVERIFIED_EMAIL}" "Unverified"
@@ -266,6 +267,7 @@ pass "created pending breeder profile ${UNVERIFIED_BREEDER_ID}"
 
 register_user "${OTHER_EMAIL}" "Other"
 OTHER_TOKEN="$(login_user "${OTHER_EMAIL}")"
+OTHER_USER_ID="$(user_id_for_email "${OTHER_EMAIL}")"
 pass "third user login"
 
 register_user "${ADMIN_EMAIL}" "Admin"
@@ -486,5 +488,59 @@ request DELETE "${API}/reviews/${REVIEW_ID}" \
 assert_status 200
 assert_success_true
 pass "customer deleted review"
+
+SUSPENSION_EXPIRES_AT="$(python3 -c 'from datetime import datetime, timedelta, timezone; print((datetime.now(timezone.utc) + timedelta(days=1)).isoformat())')"
+
+request POST "${API}/admin/users/${OTHER_USER_ID}/restrictions" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"restriction_type\": \"suspension\",
+    \"reason\": \"Smoke test temporary suspension.\",
+    \"expires_at\": \"${SUSPENSION_EXPIRES_AT}\"
+  }"
+assert_status 201
+assert_success_true
+pass "admin suspended user"
+
+request POST "${API}/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"email\": \"${OTHER_EMAIL}\",
+    \"password\": \"${PASSWORD}\"
+  }"
+assert_status 403
+assert_success_false
+pass "suspended user login rejected"
+
+request DELETE "${API}/admin/users/${OTHER_USER_ID}/restrictions" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}"
+assert_status 200
+assert_success_true
+pass "admin lifted suspension"
+
+OTHER_TOKEN="$(login_user "${OTHER_EMAIL}")"
+pass "lifted user can login again"
+
+request POST "${API}/admin/users/${BREEDER_USER_ID}/restrictions" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "restriction_type": "ban",
+    "reason": "Smoke test ban after accepted listing report."
+  }'
+assert_status 201
+assert_success_true
+pass "admin banned breeder and archived active listings"
+
+request POST "${API}/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"email\": \"${BREEDER_EMAIL}\",
+    \"password\": \"${PASSWORD}\"
+  }"
+assert_status 403
+assert_success_false
+pass "banned breeder login rejected"
 
 echo "PASS: API smoke tests completed"

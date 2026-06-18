@@ -4,7 +4,9 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.extensions import db
+from app.models.account_restriction import AccountRestriction, RESTRICTION_TYPES
 from app.models.breeder_profile import BreederProfile
+from app.models.cat_listing import CatListing
 from app.models.listing_report import REPORT_STATUSES, ListingReport
 from app.models.user import User
 
@@ -25,6 +27,65 @@ def admin_required_response():
         "success": False,
         "error": {"message": "Admin access required."},
     }), 403
+
+
+def parse_datetime(value):
+    if not value:
+        return None
+
+    if not isinstance(value, str):
+        return None
+
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    return parsed
+
+
+def archive_breeder_listings(user):
+    if not user.breeder_profile:
+        return 0
+
+    updated = CatListing.query.filter(
+        CatListing.breeder_id == user.breeder_profile.id,
+        CatListing.status != "archived",
+    ).update({"status": "archived"}, synchronize_session=False)
+
+    return updated
+
+
+def apply_account_restriction(user, admin, restriction_type, reason, expires_at=None):
+    user.email = user.email.strip().lower()
+
+    restriction = AccountRestriction.query.filter_by(email=user.email).first()
+
+    if not restriction:
+        restriction = AccountRestriction(email=user.email)
+        db.session.add(restriction)
+
+    restriction.user_id = user.id
+    restriction.restriction_type = restriction_type
+    restriction.reason = reason
+    restriction.admin_id = admin.id
+    restriction.expires_at = expires_at
+
+    user.moderation_reason = reason
+
+    archived_count = 0
+    if restriction_type == "ban":
+        user.status = "banned"
+        user.suspended_until = None
+        archived_count = archive_breeder_listings(user)
+    else:
+        user.status = "suspended"
+        user.suspended_until = expires_at
+
+    return restriction, archived_count
 
 @admin_bp.get("/certifications")
 @jwt_required()
@@ -226,5 +287,104 @@ def review_listing_report(report_id):
         "success": True,
         "data": {
             "report": report.to_dict(),
+        },
+    }), 200
+
+
+@admin_bp.post("/users/<int:user_id>/restrictions")
+@jwt_required()
+def restrict_user(user_id):
+    admin = get_current_admin()
+    if not admin:
+        return admin_required_response()
+
+    user = db.session.get(User, user_id)
+
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": {"message": "User not found."},
+        }), 404
+
+    data = request.get_json() or {}
+    restriction_type = data.get("restriction_type")
+
+    if restriction_type not in RESTRICTION_TYPES:
+        return jsonify({
+            "success": False,
+            "error": {"message": "restriction_type must be suspension or ban."},
+        }), 400
+
+    reason = data.get("reason", "")
+    if isinstance(reason, str):
+        reason = reason.strip()
+
+    if not reason:
+        return jsonify({
+            "success": False,
+            "error": {"message": "reason is required."},
+        }), 400
+
+    expires_at = parse_datetime(data.get("expires_at"))
+    if data.get("expires_at") and not expires_at:
+        return jsonify({
+            "success": False,
+            "error": {"message": "expires_at must be a valid ISO datetime."},
+        }), 400
+
+    if restriction_type == "ban":
+        expires_at = None
+
+    restriction, archived_count = apply_account_restriction(
+        user,
+        admin,
+        restriction_type,
+        reason,
+        expires_at,
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "restriction": restriction.to_dict(),
+            "user": user.to_dict(),
+            "archived_listings_count": archived_count,
+        },
+    }), 201
+
+
+@admin_bp.delete("/users/<int:user_id>/restrictions")
+@jwt_required()
+def lift_user_restriction(user_id):
+    admin = get_current_admin()
+    if not admin:
+        return admin_required_response()
+
+    user = db.session.get(User, user_id)
+
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": {"message": "User not found."},
+        }), 404
+
+    restriction = AccountRestriction.query.filter_by(email=user.email).first()
+
+    if restriction:
+        db.session.delete(restriction)
+
+    user.status = "active"
+    user.suspended_until = None
+    user.moderation_reason = None
+
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "message": "Account restriction lifted.",
+            "user": user.to_dict(),
         },
     }), 200
