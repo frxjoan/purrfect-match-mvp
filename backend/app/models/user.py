@@ -56,6 +56,17 @@ class User(db.Model):
         foreign_keys='Review.reviewer_id',
         cascade='all, delete-orphan',
     )
+    listing_reports = db.relationship(
+        'ListingReport',
+        back_populates='reporter',
+        foreign_keys='ListingReport.reporter_id',
+        cascade='all, delete-orphan',
+    )
+    reviewed_listing_reports = db.relationship(
+        'ListingReport',
+        back_populates='reviewer',
+        foreign_keys='ListingReport.reviewed_by',
+    )
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

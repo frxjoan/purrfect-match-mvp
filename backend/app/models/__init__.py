@@ -5,5 +5,15 @@ from .listing_image import ListingImage
 from .conversation import Conversation
 from .message import Message
 from .reviews import Review
+from .listing_report import ListingReport
 
-__all__ = ['User', 'BreederProfile', 'CatListing', 'ListingImage', 'Conversation', 'Message', 'Review']
+__all__ = [
+    'User',
+    'BreederProfile',
+    'CatListing',
+    'ListingImage',
+    'Conversation',
+    'Message',
+    'Review',
+    'ListingReport',
+]

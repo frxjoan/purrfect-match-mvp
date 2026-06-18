@@ -57,6 +57,11 @@ class CatListing(db.Model):
         back_populates='listing',
         cascade='all, delete-orphan',
     )
+    reports = db.relationship(
+        'ListingReport',
+        back_populates='listing',
+        cascade='all, delete-orphan',
+    )
 
     def to_dict(self):
         return {

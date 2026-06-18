@@ -4,6 +4,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.extensions import db
 from app.models.user import User
 from app.models.cat_listing import CatListing
+from app.models.listing_report import ALLOWED_REPORT_REASONS, ListingReport
 from app.models.listing_image import ListingImage
 from app.services.cloudinary_service import upload_listing_image
 
@@ -115,6 +116,71 @@ def get_listing(listing_id):
         return jsonify({"success": False, "error": {"message": "Listing not found."}}), 404
 
     return jsonify({"success": True, "data": listing.to_dict()}), 200
+
+
+@listings_bp.post("/<int:listing_id>/reports")
+@jwt_required()
+def report_listing(listing_id):
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+
+    if not user:
+        return jsonify({"success": False, "error": {"message": "User not found."}}), 404
+
+    listing = db.session.get(CatListing, listing_id)
+
+    if not listing or listing.status == "archived":
+        return jsonify({
+            "success": False,
+            "error": {"message": "Listing not found."},
+        }), 404
+
+    if user.breeder_profile and listing.breeder_id == user.breeder_profile.id:
+        return jsonify({
+            "success": False,
+            "error": {"message": "You cannot report your own listing."},
+        }), 403
+
+    data = request.get_json() or {}
+    reason = data.get("reason")
+
+    if reason not in ALLOWED_REPORT_REASONS:
+        return jsonify({
+            "success": False,
+            "error": {"message": "Invalid report reason."},
+        }), 400
+
+    existing_report = ListingReport.query.filter_by(
+        reporter_id=user.id,
+        listing_id=listing.id,
+    ).first()
+
+    if existing_report:
+        return jsonify({
+            "success": False,
+            "error": {"message": "You have already reported this listing."},
+        }), 409
+
+    comment = data.get("comment")
+    if isinstance(comment, str):
+        comment = comment.strip() or None
+
+    report = ListingReport(
+        listing_id=listing.id,
+        reporter_id=user.id,
+        reason=reason,
+        comment=comment,
+    )
+
+    db.session.add(report)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "report": report.to_dict(),
+        },
+    }), 201
 
 
 @listings_bp.post("")
