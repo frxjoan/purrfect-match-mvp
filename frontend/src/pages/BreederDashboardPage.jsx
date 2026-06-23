@@ -2,10 +2,23 @@ import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
 import { breederListings, breederThreads } from '../data/mockData.js'
+import useAuth from '../hooks/useAuth.js'
 
-const breederVerified = false
+const BREEDER_LISTINGS_KEY = 'purrfect-match-breeder-listings'
+
+function getStoredListings() {
+  try {
+    return JSON.parse(window.localStorage.getItem(BREEDER_LISTINGS_KEY)) ?? breederListings
+  } catch {
+    return breederListings
+  }
+}
 
 function BreederDashboardPage() {
+  const { currentUser } = useAuth()
+  const breederVerified = currentUser?.breederVerificationStatus === 'verified' || currentUser?.role === 'admin'
+  const listings = getStoredListings()
+
   return (
     <>
       <SectionHeader
@@ -20,15 +33,15 @@ function BreederDashboardPage() {
         </div>
       ) : null}
       <section className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Active listings" value="1" note="One draft waiting for verification" />
+        <StatCard label="Active listings" value={String(listings.length)} note="Stored locally for this demo" />
         <StatCard label="Buyer inquiries" value="12" note="Two need a response" />
-        <StatCard label="Certification" value="In review" note="Admin decision pending" />
+        <StatCard label="Certification" value={breederVerified ? 'Verified' : 'In review'} note="Demo auth verification state" />
       </section>
       <section className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Listing management</h2>
           <div className="mt-5 space-y-4">
-            {breederListings.map((listing) => (
+            {listings.map((listing) => (
               <div key={listing.id} className="rounded-lg border border-slate-200 p-4">
                 <p className="font-semibold text-slate-950">{listing.title}</p>
                 <p className="mt-1 text-sm text-slate-500">{listing.status} · {listing.inquiries} inquiries · {listing.price}</p>

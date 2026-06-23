@@ -8,7 +8,12 @@ function LoginPage() {
   const { currentUser, getRoleDashboard, signIn } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '', role: 'customer' })
+  const [form, setForm] = useState({
+    breederVerificationStatus: 'unverified',
+    email: '',
+    password: '',
+    role: 'customer',
+  })
   const [notice, setNotice] = useState('')
   const redirectTarget = location.state?.from
 
@@ -24,7 +29,11 @@ function LoginPage() {
 
   function handleSubmit(event) {
     event.preventDefault()
-    const demoUser = { email: form.email, role: form.role }
+    const demoUser = {
+      breederVerificationStatus: form.role === 'breeder' ? form.breederVerificationStatus : undefined,
+      email: form.email,
+      role: form.role,
+    }
     // TODO: Replace demo sign-in with /api/v1/auth/login, JWT storage, and /api/v1/auth/me session restore.
     signIn(demoUser)
     setNotice(`Signed in locally as ${form.role}. Redirecting...`)
@@ -51,6 +60,19 @@ function LoginPage() {
             <option value="admin">Admin</option>
           </select>
         </label>
+        {form.role === 'breeder' ? (
+          <label className="mt-4 block">
+            <span className="text-sm font-semibold text-slate-700">Breeder verification demo</span>
+            <select
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3"
+              onChange={(event) => updateForm('breederVerificationStatus', event.target.value)}
+              value={form.breederVerificationStatus}
+            >
+              <option value="unverified">Unverified breeder</option>
+              <option value="verified">Verified breeder</option>
+            </select>
+          </label>
+        ) : null}
         <ActionButton className="mt-6 w-full" disabled={!form.email || !form.password} type="submit">Sign in locally</ActionButton>
         {notice ? <p className="mt-4 text-sm font-semibold text-teal-700">{notice}</p> : null}
       </form>
