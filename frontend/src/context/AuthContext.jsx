@@ -22,6 +22,17 @@ function getRoleDashboard(role) {
   return roleDashboards[role] ?? roleDashboards.customer
 }
 
+function normalizeDemoUser(user) {
+  if (user.role !== 'breeder') {
+    return user
+  }
+
+  return {
+    ...user,
+    breederVerificationStatus: user.breederVerificationStatus ?? 'unverified',
+  }
+}
+
 function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(getStoredUser)
 
@@ -39,7 +50,7 @@ function AuthProvider({ children }) {
       currentUser,
       getRoleDashboard,
       isAuthenticated: Boolean(currentUser),
-      signIn: (user) => setCurrentUser(user),
+      signIn: (user) => setCurrentUser(normalizeDemoUser(user)),
       signOut: () => setCurrentUser(null),
     }),
     [currentUser],

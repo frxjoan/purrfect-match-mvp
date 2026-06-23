@@ -2,8 +2,20 @@ import { useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 
+const BREEDER_CERTIFICATION_KEY = 'purrfect-match-breeder-certification'
+
+const defaultCertification = { license: '', registry: '', notes: '' }
+
+function getStoredCertification() {
+  try {
+    return JSON.parse(window.localStorage.getItem(BREEDER_CERTIFICATION_KEY)) ?? defaultCertification
+  } catch {
+    return defaultCertification
+  }
+}
+
 function BreederCertificationPage() {
-  const [form, setForm] = useState({ license: '', registry: '', notes: '' })
+  const [form, setForm] = useState(getStoredCertification)
   const [submitted, setSubmitted] = useState(false)
 
   function updateForm(field, value) {
@@ -13,6 +25,7 @@ function BreederCertificationPage() {
   function handleSubmit(event) {
     event.preventDefault()
     // TODO: Upload certification documents through the breeder verification API once file contract is confirmed.
+    window.localStorage.setItem(BREEDER_CERTIFICATION_KEY, JSON.stringify(form))
     setSubmitted(true)
   }
 
