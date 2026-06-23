@@ -2,13 +2,25 @@ import { useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 
+const CUSTOMER_PROFILE_KEY = 'purrfect-match-customer-profile'
+
+const defaultProfile = {
+  firstName: 'Maya',
+  lastName: 'Reed',
+  location: 'Austin, TX',
+  preferences: 'Ragdoll or Siberian kitten, family-friendly temperament.',
+}
+
+function getStoredProfile() {
+  try {
+    return JSON.parse(window.localStorage.getItem(CUSTOMER_PROFILE_KEY)) ?? defaultProfile
+  } catch {
+    return defaultProfile
+  }
+}
+
 function CustomerProfilePage() {
-  const [profile, setProfile] = useState({
-    firstName: 'Maya',
-    lastName: 'Reed',
-    location: 'Austin, TX',
-    preferences: 'Ragdoll or Siberian kitten, family-friendly temperament.',
-  })
+  const [profile, setProfile] = useState(getStoredProfile)
   const [saved, setSaved] = useState(false)
 
   function updateProfile(field, value) {
@@ -18,6 +30,7 @@ function CustomerProfilePage() {
   function handleSubmit(event) {
     event.preventDefault()
     // TODO: Persist customer profile to /api/v1/users/me when profile update endpoint is confirmed.
+    window.localStorage.setItem(CUSTOMER_PROFILE_KEY, JSON.stringify(profile))
     setSaved(true)
   }
 

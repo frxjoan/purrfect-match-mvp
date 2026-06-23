@@ -13,8 +13,10 @@ const roleNavigation = {
   customer: [
     { to: '/customer/dashboard', label: 'Dashboard' },
     { to: '/customer/listings', label: 'Listings' },
+    { to: '/customer/saved', label: 'Saved' },
     { to: '/customer/messages', label: 'Messages' },
     { to: '/customer/profile', label: 'Profile' },
+    { to: '/customer/settings', label: 'Settings' },
   ],
   breeder: [
     { to: '/breeder/dashboard', label: 'Breeder Dashboard' },
@@ -24,8 +26,10 @@ const roleNavigation = {
     { to: '/breeder/profile', label: 'Breeder Profile' },
     { to: '/customer/dashboard', label: 'Customer Dashboard' },
     { to: '/customer/listings', label: 'Browse Listings' },
+    { to: '/customer/saved', label: 'Saved Listings' },
     { to: '/customer/messages', label: 'Customer Messages' },
     { to: '/customer/profile', label: 'Customer Profile' },
+    { to: '/customer/settings', label: 'Customer Settings' },
   ],
   admin: [
     { to: '/admin/dashboard', label: 'Admin Dashboard' },
@@ -38,8 +42,10 @@ const roleNavigation = {
     { to: '/breeder/profile', label: 'Breeder Profile' },
     { to: '/customer/dashboard', label: 'Customer Dashboard' },
     { to: '/customer/listings', label: 'Customer Listings' },
+    { to: '/customer/saved', label: 'Saved Listings' },
     { to: '/customer/messages', label: 'Customer Messages' },
     { to: '/customer/profile', label: 'Customer Profile' },
+    { to: '/customer/settings', label: 'Customer Settings' },
   ],
 }
 

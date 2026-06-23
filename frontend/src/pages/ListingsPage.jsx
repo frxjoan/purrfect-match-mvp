@@ -6,12 +6,23 @@ import SectionHeader from '../components/SectionHeader.jsx'
 import { listings } from '../data/mockData.js'
 import useAuth from '../hooks/useAuth.js'
 
+const SAVED_LISTINGS_KEY = 'purrfect-match-saved-listings'
+
+function getSavedListingIds() {
+  try {
+    return JSON.parse(window.localStorage.getItem(SAVED_LISTINGS_KEY)) ?? []
+  } catch {
+    return []
+  }
+}
+
 function ListingsPage() {
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [filters, setFilters] = useState({ breed: '', location: '', maxPrice: '' })
   const [reportListing, setReportListing] = useState(null)
+  const [savedListingIds, setSavedListingIds] = useState(getSavedListingIds)
 
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
@@ -38,6 +49,23 @@ function ListingsPage() {
     }
 
     setReportListing(listing)
+  }
+
+  function toggleSavedListing(listingId) {
+    if (!currentUser) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+
+    setSavedListingIds((currentIds) => {
+      const nextIds = currentIds.includes(listingId)
+        ? currentIds.filter((id) => id !== listingId)
+        : [...currentIds, listingId]
+
+      // TODO: Persist saved listings through the customer saved-listings API when it exists.
+      window.localStorage.setItem(SAVED_LISTINGS_KEY, JSON.stringify(nextIds))
+      return nextIds
+    })
   }
 
   return (
@@ -92,7 +120,13 @@ function ListingsPage() {
 
       <section className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {filteredListings.map((listing) => (
-          <ListingCard key={listing.id} listing={listing} onReport={handleReport} />
+          <ListingCard
+            isSaved={savedListingIds.includes(listing.id)}
+            key={listing.id}
+            listing={listing}
+            onReport={handleReport}
+            onToggleSave={toggleSavedListing}
+          />
         ))}
       </section>
 

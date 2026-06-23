@@ -1,6 +1,6 @@
 import ActionButton from './ActionButton.jsx'
 
-function ListingCard({ listing, onReport }) {
+function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <img alt={`${listing.name} the ${listing.breed}`} className="h-48 w-full object-cover" src={listing.image} />
@@ -35,6 +35,11 @@ function ListingCard({ listing, onReport }) {
         </dl>
         <div className="mt-auto flex flex-wrap gap-3">
           <ActionButton to={`/customer/listings/${listing.id}`}>View details</ActionButton>
+          {onToggleSave ? (
+            <ActionButton onClick={() => onToggleSave(listing.id)} variant={isSaved ? 'primary' : 'secondary'}>
+              {isSaved ? 'Saved' : 'Save'}
+            </ActionButton>
+          ) : null}
           <ActionButton onClick={() => onReport(listing)} variant="secondary">
             Report
           </ActionButton>
