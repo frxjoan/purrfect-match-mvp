@@ -8,4 +8,7 @@ const api = axios.create({
   timeout: 10000,
 })
 
+// TODO: Add auth token injection once login stores the JWT returned by /api/v1/auth/login.
+// TODO: Keep all future Flask API calls in this module or small service modules that import this client.
+
 export default api
