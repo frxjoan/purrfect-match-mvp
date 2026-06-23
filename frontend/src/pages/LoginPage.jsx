@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
-import SectionHeader from '../components/SectionHeader.jsx'
 import useAuth from '../hooks/useAuth.js'
 
 function LoginPage() {
@@ -29,42 +28,77 @@ function LoginPage() {
 
   function handleSubmit(event) {
     event.preventDefault()
+    signInRole(form.role)
+  }
+
+  function signInRole(role) {
     const demoUser = {
-      breederVerificationStatus: form.role === 'breeder' ? form.breederVerificationStatus : undefined,
-      email: form.email,
-      role: form.role,
+      breederVerificationStatus: role === 'breeder' ? form.breederVerificationStatus : undefined,
+      email: form.email || `${role}@purrfectmatch.dev`,
+      role,
     }
     // TODO: Replace demo sign-in with /api/v1/auth/login, JWT storage, and /api/v1/auth/me session restore.
     signIn(demoUser)
-    setNotice(`Signed in locally as ${form.role}. Redirecting...`)
-    navigate(redirectTarget ?? getRoleDashboard(form.role), { replace: true })
+    setNotice(`Signed in locally as ${role}. Redirecting...`)
+    navigate(redirectTarget ?? getRoleDashboard(role), { replace: true })
+  }
+
+  function handleQuickRole(role) {
+    updateForm('role', role)
+    signInRole(role)
   }
 
   return (
-    <>
-      <SectionHeader eyebrow="Account access" title="Sign in" description="Controlled demo login keeps testing open while backend auth integration is pending." />
-      <form className="mx-auto w-full max-w-xl rounded-lg border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
-        <label className="block">
-          <span className="text-sm font-semibold text-slate-700">Email</span>
-          <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm('email', event.target.value)} placeholder="buyer@purrfectmatch.dev" type="email" value={form.email} />
-        </label>
-        <label className="mt-4 block">
-          <span className="text-sm font-semibold text-slate-700">Password</span>
-          <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm('password', event.target.value)} placeholder="Password" type="password" value={form.password} />
-        </label>
-        <label className="mt-4 block">
-          <span className="text-sm font-semibold text-slate-700">Demo role</span>
-          <select className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm('role', event.target.value)} value={form.role}>
+    <section className="mx-auto flex min-h-[62vh] w-full max-w-3xl flex-col items-center justify-center gap-10 rounded-lg border border-black/20 bg-[#eee7ff] px-4 py-12">
+      <div className="grid w-full max-w-xs gap-10">
+        <ActionButton className="w-full" onClick={() => handleQuickRole('breeder')} type="button">
+          Sign in Breeder
+        </ActionButton>
+        <ActionButton className="w-full" onClick={() => handleQuickRole('customer')} type="button">
+          Sign in Customer
+        </ActionButton>
+        <ActionButton className="w-full" onClick={() => navigate('/register')} type="button">
+          Sign up
+        </ActionButton>
+      </div>
+
+      <form className="w-full max-w-md rounded-lg border border-black bg-[#fbfbff] p-5 shadow-sm" onSubmit={handleSubmit}>
+        <p className="text-center text-sm font-semibold text-slate-800">Demo account options</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-700">Email</span>
+            <input
+              className="mt-1 w-full rounded-lg border border-black bg-white px-3 py-2 text-sm"
+              onChange={(event) => updateForm('email', event.target.value)}
+              placeholder="buyer@purrfectmatch.dev"
+              type="email"
+              value={form.email}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-700">Password</span>
+            <input
+              className="mt-1 w-full rounded-lg border border-black bg-white px-3 py-2 text-sm"
+              onChange={(event) => updateForm('password', event.target.value)}
+              placeholder="Optional for demo"
+              type="password"
+              value={form.password}
+            />
+          </label>
+        </div>
+        <label className="mt-3 block">
+          <span className="text-xs font-semibold text-slate-700">Demo role</span>
+          <select className="mt-1 w-full rounded-lg border border-black bg-white px-3 py-2 text-sm" onChange={(event) => updateForm('role', event.target.value)} value={form.role}>
             <option value="customer">Customer</option>
             <option value="breeder">Breeder</option>
             <option value="admin">Admin</option>
           </select>
         </label>
         {form.role === 'breeder' ? (
-          <label className="mt-4 block">
-            <span className="text-sm font-semibold text-slate-700">Breeder verification demo</span>
+          <label className="mt-3 block">
+            <span className="text-xs font-semibold text-slate-700">Breeder verification demo</span>
             <select
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3"
+              className="mt-1 w-full rounded-lg border border-black bg-white px-3 py-2 text-sm"
               onChange={(event) => updateForm('breederVerificationStatus', event.target.value)}
               value={form.breederVerificationStatus}
             >
@@ -73,10 +107,12 @@ function LoginPage() {
             </select>
           </label>
         ) : null}
-        <ActionButton className="mt-6 w-full" disabled={!form.email || !form.password} type="submit">Sign in locally</ActionButton>
-        {notice ? <p className="mt-4 text-sm font-semibold text-teal-700">{notice}</p> : null}
+        <ActionButton className="mt-4 w-full" type="submit">
+          Continue as selected role
+        </ActionButton>
+        {notice ? <p className="mt-3 text-center text-sm font-semibold text-teal-700">{notice}</p> : null}
       </form>
-    </>
+    </section>
   )
 }
 

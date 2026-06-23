@@ -58,8 +58,8 @@ function NavigationLinks({ navigation, onNavigate }) {
       to={item.to}
       className={({ isActive }) =>
         [
-          'rounded-lg px-3 py-2 font-medium transition',
-          isActive ? 'bg-teal-700 text-white shadow-sm' : 'hover:bg-teal-50 hover:text-teal-800',
+          'rounded-full border border-black bg-white px-4 py-2 text-center text-xs font-medium transition',
+          isActive ? 'bg-[#6c5ce7] text-white' : 'hover:bg-[#f7f3ff]',
         ].join(' ')
       }
     >
@@ -71,71 +71,68 @@ function NavigationLinks({ navigation, onNavigate }) {
 function MainLayout({ children }) {
   const { currentUser, signOut } = useAuth()
   const navigate = useNavigate()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const navigation = currentUser ? roleNavigation[currentUser.role] ?? roleNavigation.customer : publicNavigation
+  const customerMenu = [
+    { to: '/customer/profile', label: 'Profile' },
+    { to: '/customer/saved', label: 'Announce liked' },
+    { to: '/customer/reviews', label: 'Review' },
+    { to: '/customer/messages', label: 'Message' },
+  ]
+  const profileMenu = currentUser?.role === 'customer' ? customerMenu : navigation
 
   function handleLogout() {
     signOut()
-    setIsMobileMenuOpen(false)
+    setIsProfileMenuOpen(false)
     navigate('/login', { replace: true })
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-lg font-bold text-slate-950">Purrfect Match</p>
-              <p className="text-sm text-slate-500">Trusted cats, breeders, and conversations.</p>
-            </div>
+    <div className="min-h-screen bg-[#eee7ff] text-slate-950">
+      <header className="sticky top-0 z-30 border-b border-black/10 bg-[#fbfbff]">
+        <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3 md:px-8">
+          <NavLink className="flex h-12 w-16 flex-col items-center justify-center text-[10px] font-bold leading-tight text-[#6c5ce7]" to="/">
+            <span className="text-xl leading-none">♕</span>
+            <span>Purrfect</span>
+            <span className="text-[#ff7bac]">Match</span>
+          </NavLink>
+          <NavLink className="justify-self-center text-center text-xl font-medium leading-tight" to="/">
+            <span className="block text-[#5c63ff]">Purrfect</span>
+            <span className="block text-[#ff7bac]">Match</span>
+          </NavLink>
+          <div className="relative justify-self-end">
             <button
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 md:hidden"
-              onClick={() => setIsMobileMenuOpen((isOpen) => !isOpen)}
+              aria-label="Open profile menu"
+              className="relative h-12 w-12 rounded-full border-0 bg-transparent"
+              onClick={() => setIsProfileMenuOpen((isOpen) => !isOpen)}
               type="button"
             >
-              Menu
+              <span className="absolute left-1/2 top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-black bg-white" />
+              <span className="absolute bottom-1 left-1/2 h-5 w-8 -translate-x-1/2 rounded-t-full border-2 border-black bg-white" />
             </button>
-          </div>
-          <nav className="mt-4 hidden flex-wrap items-center gap-2 text-sm text-slate-700 md:flex">
-            <NavigationLinks navigation={navigation} />
-            {currentUser ? (
-              <>
-                <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  {currentUser.role}
-                </span>
-                <button
-                  className="rounded-lg border border-slate-200 px-3 py-2 font-medium text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-                  onClick={handleLogout}
-                  type="button"
-                >
-                  Logout
-                </button>
-              </>
+            {isProfileMenuOpen ? (
+              <div className="absolute right-0 top-14 z-40 w-64 rounded-lg border border-black bg-[#f8f7fb] p-4 shadow-xl">
+                <nav className="grid gap-3">
+                  <NavigationLinks navigation={profileMenu} onNavigate={() => setIsProfileMenuOpen(false)} />
+                  {!currentUser ? null : (
+                    <button
+                      className="rounded-full border border-black bg-white px-4 py-2 text-xs font-medium transition hover:bg-[#fff0f6]"
+                      onClick={handleLogout}
+                      type="button"
+                    >
+                      Logout
+                    </button>
+                  )}
+                </nav>
+              </div>
             ) : null}
-          </nav>
-          {isMobileMenuOpen ? (
-            <nav className="mt-4 grid gap-2 text-sm text-slate-700 md:hidden">
-              <NavigationLinks navigation={navigation} onNavigate={() => setIsMobileMenuOpen(false)} />
-              {currentUser ? (
-                <>
-                  <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    {currentUser.role}
-                  </span>
-                  <button
-                    className="rounded-lg border border-slate-200 px-3 py-2 text-left font-medium text-slate-700 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-                    onClick={handleLogout}
-                    type="button"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : null}
-            </nav>
-          ) : null}
+          </div>
         </div>
       </header>
-      <main className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 md:px-6 md:py-10">{children}</main>
+      <main className="mx-auto flex min-h-[calc(100vh-116px)] max-w-7xl flex-col gap-8 px-4 py-8 md:px-8">{children}</main>
+      <footer className="border-t border-black/50 bg-[#eee7ff] px-4 py-2 text-center text-xs text-slate-900">
+        © 2026 Purrfect Match — Student Portfolio Project
+      </footer>
     </div>
   )
 }

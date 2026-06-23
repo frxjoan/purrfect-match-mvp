@@ -1,44 +1,139 @@
-import ActionButton from '../components/ActionButton.jsx'
-import PageHero from '../components/PageHero.jsx'
-import StatCard from '../components/StatCard.jsx'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
+import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
+import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
+import ReportListingModal from '../components/ReportListingModal.jsx'
+import { listings as demoListings } from '../data/mockData.js'
+import useAuth from '../hooks/useAuth.js'
+import { fetchListings } from '../services/api.js'
 
-const entryCards = [
-  { title: 'Customers', text: 'Search verified cats, manage saved conversations, and report suspicious listings.', to: '/customer/dashboard' },
-  { title: 'Breeders', text: 'Track verification, manage listings, and respond to buyer inquiries.', to: '/breeder/dashboard' },
-  { title: 'Admins', text: 'Review breeder applications, marketplace reports, and platform health.', to: '/admin/dashboard' },
-]
+const SAVED_LISTINGS_KEY = 'purrfect-match-saved-listings'
+
+function getSavedListingIds() {
+  try {
+    return JSON.parse(window.localStorage.getItem(SAVED_LISTINGS_KEY)) ?? []
+  } catch {
+    return []
+  }
+}
 
 function HomePage() {
+  const { currentUser } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const [listings, setListings] = useState([])
+  const [isFallbackDemo, setIsFallbackDemo] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [reportListing, setReportListing] = useState(null)
+  const [savedListingIds, setSavedListingIds] = useState(getSavedListingIds)
+
+  useEffect(() => {
+    let isActive = true
+
+    async function loadListings() {
+      setIsLoading(true)
+      setLoadError('')
+
+      try {
+        const result = await fetchListings({ status: 'available' })
+
+        if (!isActive) {
+          return
+        }
+
+        setListings(result.listings)
+        setIsFallbackDemo(false)
+      } catch {
+        if (!isActive) {
+          return
+        }
+
+        // TODO: Remove demo fallback once the hosted Flask API is always available in demo environments.
+        setListings(demoListings)
+        setIsFallbackDemo(true)
+        setLoadError('Backend listings are unavailable, so demo announcements are shown temporarily.')
+      } finally {
+        if (isActive) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadListings()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  const filteredListings = useMemo(() => {
+    return listings.filter((listing) => {
+      const haystack = `${listing.name} ${listing.breed} ${listing.location}`.toLowerCase()
+      return haystack.includes(query.toLowerCase())
+    })
+  }, [listings, query])
+
+  function requireLoginOrRun(action) {
+    if (!currentUser) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+
+    action()
+  }
+
+  function toggleSavedListing(listingId) {
+    requireLoginOrRun(() => {
+      setSavedListingIds((currentIds) => {
+        const normalizedListingId = String(listingId)
+        const normalizedCurrentIds = currentIds.map(String)
+        const nextIds = normalizedCurrentIds.includes(normalizedListingId)
+          ? normalizedCurrentIds.filter((id) => id !== normalizedListingId)
+          : [...normalizedCurrentIds, normalizedListingId]
+
+        // TODO: Persist saved listings through the customer saved-listings API when it exists.
+        window.localStorage.setItem(SAVED_LISTINGS_KEY, JSON.stringify(nextIds))
+        return nextIds
+      })
+    })
+  }
+
+  function handleReport(listing) {
+    requireLoginOrRun(() => setReportListing(listing))
+  }
+
   return (
     <>
-      <PageHero
-        eyebrow="Marketplace MVP"
-        title="A calmer way to match families with trusted cat breeders"
-        description="The frontend is organized around the three users this MVP needs most: customers, breeders, and admins. Each section is ready for Flask API integration as endpoints are finalized."
-      >
-        <div className="flex flex-wrap gap-3">
-          <ActionButton to="/customer/listings">Browse cats</ActionButton>
-          <ActionButton to="/breeder/certification" variant="secondary">Start breeder verification</ActionButton>
-        </div>
-      </PageHero>
-
-      <section className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Verified-first" value="3" note="Role sections ready for MVP workflows" />
-        <StatCard label="Listings" value="4" note="Static cards until live listing fetch is connected" />
-        <StatCard label="Admin flow" value="2" note="Verification and reports queues scaffolded" />
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-3">
-        {entryCards.map((card) => (
-          <article key={card.title} className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-slate-950">{card.title}</h2>
-            <p className="mt-3 min-h-20 text-sm leading-6 text-slate-600">{card.text}</p>
-            <ActionButton className="mt-5 w-full" to={card.to} variant="secondary">
-              Open {card.title}
-            </ActionButton>
-          </article>
-        ))}
-      </section>
+      <div className="mx-auto w-full max-w-6xl space-y-10">
+        <CustomerSearchBar onChange={setQuery} value={query} />
+        {loadError ? (
+          <div className="rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">
+            {loadError}
+          </div>
+        ) : null}
+        {isLoading ? (
+          <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
+            Loading announcements...
+          </div>
+        ) : (
+          <CustomerListingGrid
+            listings={filteredListings}
+            onReport={handleReport}
+            onToggleSave={toggleSavedListing}
+            savedListingIds={savedListingIds}
+          />
+        )}
+        {!isLoading && filteredListings.length === 0 ? (
+          <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
+            {isFallbackDemo ? 'No demo announcements match this search.' : 'No announcements match this search.'}
+          </div>
+        ) : null}
+      </div>
+      <FloatingMessageButton />
+      <ReportListingModal listing={reportListing} onClose={() => setReportListing(null)} />
     </>
   )
 }

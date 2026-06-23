@@ -1,7 +1,12 @@
-import { useMemo, useState } from 'react'
-import ActionButton from '../components/ActionButton.jsx'
-import SectionHeader from '../components/SectionHeader.jsx'
-import { listings } from '../data/mockData.js'
+import { useEffect, useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
+import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
+import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
+import ReportListingModal from '../components/ReportListingModal.jsx'
+import { listings as demoListings } from '../data/mockData.js'
+import useAuth from '../hooks/useAuth.js'
+import { fetchListings } from '../services/api.js'
 
 const SAVED_LISTINGS_KEY = 'purrfect-match-saved-listings'
 
@@ -14,50 +19,107 @@ function getSavedListingIds() {
 }
 
 function CustomerSavedListingsPage() {
+  const { currentUser } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [query, setQuery] = useState('')
+  const [listings, setListings] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [reportListing, setReportListing] = useState(null)
   const [savedListingIds, setSavedListingIds] = useState(getSavedListingIds)
+
+  useEffect(() => {
+    let isActive = true
+
+    async function loadListings() {
+      setIsLoading(true)
+      setLoadError('')
+
+      try {
+        const result = await fetchListings()
+
+        if (!isActive) {
+          return
+        }
+
+        setListings(result.listings)
+      } catch {
+        if (!isActive) {
+          return
+        }
+
+        // TODO: Remove demo fallback once saved listings have a backend endpoint.
+        setListings(demoListings)
+        setLoadError('Backend listings are unavailable, so demo liked announcements are shown temporarily.')
+      } finally {
+        if (isActive) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadListings()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
   const savedListings = useMemo(
-    () => listings.filter((listing) => savedListingIds.includes(listing.id)),
-    [savedListingIds],
+    () => listings.filter((listing) => {
+      const haystack = `${listing.name} ${listing.breed} ${listing.location}`.toLowerCase()
+      return savedListingIds.map(String).includes(String(listing.id)) && haystack.includes(query.toLowerCase())
+    }),
+    [listings, query, savedListingIds],
   )
 
   function removeSavedListing(listingId) {
     setSavedListingIds((currentIds) => {
-      const nextIds = currentIds.filter((id) => id !== listingId)
+      const nextIds = currentIds.map(String).filter((id) => id !== String(listingId))
       // TODO: Remove saved listing through customer API when backend persistence exists.
       window.localStorage.setItem(SAVED_LISTINGS_KEY, JSON.stringify(nextIds))
       return nextIds
     })
   }
 
+  function handleReport(listing) {
+    if (!currentUser) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+
+    setReportListing(listing)
+  }
+
   return (
     <>
-      <SectionHeader
-        eyebrow="Customer saved listings"
-        title="Favorites"
-        description="Saved cats are stored locally for demo browsing until backend saved-listing endpoints are added."
-        actions={<ActionButton to="/customer/listings">Browse more cats</ActionButton>}
-      />
-      {savedListings.length ? (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {savedListings.map((listing) => (
-            <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={listing.id}>
-              <p className="text-sm font-semibold text-teal-700">{listing.breed}</p>
-              <h2 className="mt-2 text-2xl font-bold text-slate-950">{listing.name}</h2>
-              <p className="mt-2 text-sm text-slate-600">{listing.location} · ${listing.price.toLocaleString()}</p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <ActionButton to={`/customer/listings/${listing.id}`}>Open</ActionButton>
-                <ActionButton onClick={() => removeSavedListing(listing.id)} variant="secondary">
-                  Remove
-                </ActionButton>
-              </div>
-            </article>
-          ))}
-        </section>
-      ) : (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
-          No saved listings yet.
-        </div>
-      )}
+      <div className="mx-auto w-full max-w-6xl space-y-10">
+        <CustomerSearchBar onChange={setQuery} value={query} />
+        {loadError ? (
+          <div className="rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">
+            {loadError}
+          </div>
+        ) : null}
+        {isLoading ? (
+          <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
+            Loading liked announcements...
+          </div>
+        ) : savedListings.length ? (
+          <CustomerListingGrid
+            listings={savedListings}
+            onReport={handleReport}
+            onToggleSave={removeSavedListing}
+            savedListingIds={savedListingIds}
+          />
+        ) : (
+          <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
+            No liked announcements yet.
+          </div>
+        )}
+      </div>
+      <FloatingMessageButton />
+      <ReportListingModal listing={reportListing} onClose={() => setReportListing(null)} />
     </>
   )
 }

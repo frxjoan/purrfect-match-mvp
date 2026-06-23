@@ -13,6 +13,7 @@ import BreederProfilePage from '../pages/BreederProfilePage.jsx'
 import CustomerDashboardPage from '../pages/CustomerDashboardPage.jsx'
 import CustomerMessagesPage from '../pages/CustomerMessagesPage.jsx'
 import CustomerProfilePage from '../pages/CustomerProfilePage.jsx'
+import CustomerReviewsPage from '../pages/CustomerReviewsPage.jsx'
 import CustomerSavedListingsPage from '../pages/CustomerSavedListingsPage.jsx'
 import CustomerSettingsPage from '../pages/CustomerSettingsPage.jsx'
 import HomePage from '../pages/HomePage.jsx'
@@ -45,6 +46,7 @@ function AppRouter() {
           <Route path="/customer/listings/:listingId" element={<ListingDetailPage />} />
           <Route path="/customer/profile" element={<ProtectedRoute allowedRole="customer"><CustomerProfilePage /></ProtectedRoute>} />
           <Route path="/customer/messages" element={<ProtectedRoute allowedRole="customer"><CustomerMessagesPage /></ProtectedRoute>} />
+          <Route path="/customer/reviews" element={<ProtectedRoute allowedRole="customer"><CustomerReviewsPage /></ProtectedRoute>} />
           <Route path="/customer/saved" element={<ProtectedRoute allowedRole="customer"><CustomerSavedListingsPage /></ProtectedRoute>} />
           <Route path="/customer/settings" element={<ProtectedRoute allowedRole="customer"><CustomerSettingsPage /></ProtectedRoute>} />
 

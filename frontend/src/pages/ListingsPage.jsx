@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import ListingCard from '../components/ListingCard.jsx'
+import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
+import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
+import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
-import SectionHeader from '../components/SectionHeader.jsx'
-import { listings } from '../data/mockData.js'
+import { listings as demoListings } from '../data/mockData.js'
 import useAuth from '../hooks/useAuth.js'
+import { fetchListings } from '../services/api.js'
 
 const SAVED_LISTINGS_KEY = 'purrfect-match-saved-listings'
 
@@ -20,27 +22,60 @@ function ListingsPage() {
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [filters, setFilters] = useState({ breed: '', location: '', maxPrice: '' })
+  const [filters, setFilters] = useState({ search: '' })
+  const [listings, setListings] = useState([])
+  const [isFallbackDemo, setIsFallbackDemo] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [reportListing, setReportListing] = useState(null)
   const [savedListingIds, setSavedListingIds] = useState(getSavedListingIds)
 
+  useEffect(() => {
+    let isActive = true
+
+    async function loadListings() {
+      setIsLoading(true)
+      setLoadError('')
+
+      try {
+        const result = await fetchListings()
+
+        if (!isActive) {
+          return
+        }
+
+        setListings(result.listings)
+        setIsFallbackDemo(false)
+      } catch {
+        if (!isActive) {
+          return
+        }
+
+        // TODO: Remove demo fallback once the hosted Flask API is always available in demo environments.
+        setListings(demoListings)
+        setIsFallbackDemo(true)
+        setLoadError('Backend listings are unavailable, so demo announcements are shown temporarily.')
+      } finally {
+        if (isActive) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadListings()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
-      const matchesBreed = listing.breed.toLowerCase().includes(filters.breed.toLowerCase())
-      const matchesLocation = listing.location.toLowerCase().includes(filters.location.toLowerCase())
-      const matchesPrice = filters.maxPrice ? listing.price <= Number(filters.maxPrice) : true
+      const haystack = `${listing.name} ${listing.breed} ${listing.location}`.toLowerCase()
 
-      return matchesBreed && matchesLocation && matchesPrice
+      return haystack.includes(filters.search.toLowerCase())
     })
-  }, [filters])
-
-  function updateFilter(field, value) {
-    setFilters((current) => ({ ...current, [field]: value }))
-  }
-
-  function clearFilters() {
-    setFilters({ breed: '', location: '', maxPrice: '' })
-  }
+  }, [filters, listings])
 
   function handleReport(listing) {
     if (!currentUser) {
@@ -58,9 +93,11 @@ function ListingsPage() {
     }
 
     setSavedListingIds((currentIds) => {
-      const nextIds = currentIds.includes(listingId)
-        ? currentIds.filter((id) => id !== listingId)
-        : [...currentIds, listingId]
+      const normalizedListingId = String(listingId)
+      const normalizedCurrentIds = currentIds.map(String)
+      const nextIds = normalizedCurrentIds.includes(normalizedListingId)
+        ? normalizedCurrentIds.filter((id) => id !== normalizedListingId)
+        : [...normalizedCurrentIds, normalizedListingId]
 
       // TODO: Persist saved listings through the customer saved-listings API when it exists.
       window.localStorage.setItem(SAVED_LISTINGS_KEY, JSON.stringify(nextIds))
@@ -70,72 +107,39 @@ function ListingsPage() {
 
   return (
     <>
-      <SectionHeader
-        eyebrow="Customer"
-        title="Find your next cat"
-        description="Search real marketplace-style cards with temporary static data. API integration should fetch from /api/v1/listings once pagination and response needs are finalized."
-      />
-      {!currentUser ? (
-        <div className="rounded-lg border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">
-          Listings are public. Message and report actions require login.
-        </div>
-      ) : null}
-
-      <form className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-4">
-        <label className="block">
-          <span className="text-sm font-semibold text-slate-700">Breed</span>
-          <input
-            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3"
-            onChange={(event) => updateFilter('breed', event.target.value)}
-            placeholder="Ragdoll"
-            value={filters.breed}
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-semibold text-slate-700">Location</span>
-          <input
-            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3"
-            onChange={(event) => updateFilter('location', event.target.value)}
-            placeholder="Austin"
-            value={filters.location}
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-semibold text-slate-700">Max price</span>
-          <input
-            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3"
-            min="0"
-            onChange={(event) => updateFilter('maxPrice', event.target.value)}
-            placeholder="2000"
-            type="number"
-            value={filters.maxPrice}
-          />
-        </label>
-        <div className="flex items-end">
-          <button className="min-h-11 w-full rounded-lg border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:border-teal-300 hover:text-teal-700" onClick={clearFilters} type="button">
-            Clear filters
-          </button>
-        </div>
-      </form>
-
-      <section className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-        {filteredListings.map((listing) => (
-          <ListingCard
-            isSaved={savedListingIds.includes(listing.id)}
-            key={listing.id}
-            listing={listing}
+      <div className="mx-auto w-full max-w-6xl space-y-10">
+        <CustomerSearchBar onChange={(value) => setFilters({ search: value })} value={filters.search} />
+        {!currentUser ? (
+          <div className="mx-auto max-w-md rounded-xl border border-black bg-white p-3 text-center text-xs">
+            Listings are public. Message, save and report actions require login.
+          </div>
+        ) : null}
+        {loadError ? (
+          <div className="rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">
+            {loadError}
+          </div>
+        ) : null}
+        {isLoading ? (
+          <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
+            Loading announcements...
+          </div>
+        ) : (
+          <CustomerListingGrid
+            listings={filteredListings}
             onReport={handleReport}
             onToggleSave={toggleSavedListing}
+            savedListingIds={savedListingIds}
           />
-        ))}
-      </section>
+        )}
+      </div>
 
-      {filteredListings.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
-          No cats match those filters yet.
+      {!isLoading && filteredListings.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-black bg-white p-8 text-center text-sm">
+          {isFallbackDemo ? 'No demo cats match those filters yet.' : 'No cats match those filters yet.'}
         </div>
       ) : null}
 
+      <FloatingMessageButton />
       <ReportListingModal listing={reportListing} onClose={() => setReportListing(null)} />
     </>
   )
