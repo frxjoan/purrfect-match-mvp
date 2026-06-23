@@ -1,0 +1,702 @@
+{
+    "info":  {
+                 "_postman_id":  "ed14f34c-69f2-462a-8ec8-7aa623a43001",
+                 "name":  "Purrfect Match Backend API",
+                 "description":  "Backend-only API collection for local Docker development. Run Docker and migrations first, then import the companion environment. Some setup steps use local API calls; admin/breeder verification still needs local DB bootstrap if no admin seed exists.",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+             },
+    "event":  [
+                  {
+                      "listen":  "prerequest",
+                      "script":  {
+                                     "type":  "text/javascript",
+                                     "exec":  [
+                                                  "if (!pm.collectionVariables.get(\u0027suffix\u0027)) {",
+                                                  "  pm.collectionVariables.set(\u0027suffix\u0027, Date.now());",
+                                                  "}",
+                                                  "const suffix = pm.collectionVariables.get(\u0027suffix\u0027);",
+                                                  "pm.collectionVariables.set(\u0027customerEmail\u0027, `postman-customer-${suffix}@example.test`);",
+                                                  "pm.collectionVariables.set(\u0027breederEmail\u0027, `postman-breeder-${suffix}@example.test`);",
+                                                  "pm.collectionVariables.set(\u0027otherEmail\u0027, `postman-other-${suffix}@example.test`);",
+                                                  "pm.collectionVariables.set(\u0027adminEmail\u0027, `postman-admin-${suffix}@example.test`);"
+                                              ]
+                                 }
+                  }
+              ],
+    "item":  [
+                 {
+                     "name":  "00 Health",
+                     "item":  [
+                                  {
+                                      "name":  "GET health",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/health"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027success true\u0027, () =\u003e pm.expect(json.success).to.eql(true));",
+                                                                                    "pm.test(\u0027service ok\u0027, () =\u003e pm.expect(json.data.status).to.eql(\u0027ok\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "01 Auth",
+                     "item":  [
+                                  {
+                                      "name":  "Register customer",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{password}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Customer\",\n  \"location\": \"Paris\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/register"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027success true\u0027, () =\u003e pm.expect(json.success).to.eql(true));",
+                                                                                    "pm.collectionVariables.set(\u0027customerId\u0027, json.data.user.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Login customer",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{customerEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/login"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027login ok\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027has token\u0027, () =\u003e pm.expect(json.data.token).to.be.a(\u0027string\u0027));",
+                                                                                    "pm.collectionVariables.set(\u0027customerToken\u0027, json.data.token);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Register breeder",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{breederEmail}}\",\n  \"password\": \"{{password}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Breeder\",\n  \"location\": \"Paris\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/register"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027breederUserId\u0027, json.data.user.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Login breeder",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{breederEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/login"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027login ok\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027breederToken\u0027, json.data.token);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Register admin candidate",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\",\n  \"first_name\": \"Postman\",\n  \"last_name\": \"Admin\",\n  \"location\": \"Paris\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/register"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027adminUserId\u0027, json.data.user.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Login admin candidate",
+                                      "description":  "Before running admin requests, promote this generated user in local Docker PostgreSQL: docker compose exec -T postgres psql -U postgres -d purrfect_match -c \"UPDATE users SET role=\u0027admin\u0027 WHERE email=\u0027{{adminEmail}}\u0027;\"",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/auth/login"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027login ok\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027adminToken\u0027, json.data.token);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "02 Breeder And Listings",
+                     "description":  "If certification upload or admin bootstrap is not available, use Docker psql to create/verify a breeder profile for the generated breeder user before creating a listing.",
+                     "item":  [
+                                  {
+                                      "name":  "Apply as breeder",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{breederToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "business_name",
+                                                                                        "value":  "Postman Cattery",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "location",
+                                                                                        "value":  "Paris",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "bio",
+                                                                                        "value":  "Created by Postman backend collection.",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "certification_document",
+                                                                                        "type":  "file",
+                                                                                        "src":  "{{testImagePath}}"
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/breeders/apply"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created or already handled manually\u0027, () =\u003e pm.expect([201,409,500]).to.include(pm.response.code));",
+                                                                                    "if (pm.response.code === 201) {",
+                                                                                    "  const json = pm.response.json();",
+                                                                                    "  pm.collectionVariables.set(\u0027breederId\u0027, json.data.breeder_profile.id);",
+                                                                                    "}"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Create listing",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{breederToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "formdata",
+                                                                   "formdata":  [
+                                                                                    {
+                                                                                        "key":  "title",
+                                                                                        "value":  "Postman kitten",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "breed",
+                                                                                        "value":  "Ragdoll",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "age_months",
+                                                                                        "value":  "4",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "gender",
+                                                                                        "value":  "female",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "price",
+                                                                                        "value":  "1200",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "location",
+                                                                                        "value":  "Paris",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "description",
+                                                                                        "value":  "Created by Postman collection.",
+                                                                                        "type":  "text"
+                                                                                    },
+                                                                                    {
+                                                                                        "key":  "images",
+                                                                                        "type":  "file",
+                                                                                        "src":  "{{testImagePath}}"
+                                                                                    }
+                                                                                ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/listings"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027success true\u0027, () =\u003e pm.expect(json.success).to.eql(true));",
+                                                                                    "pm.collectionVariables.set(\u0027listingId\u0027, json.data.id);",
+                                                                                    "pm.collectionVariables.set(\u0027breederId\u0027, json.data.breeder_id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "List listings with filters",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  "{{baseUrl}}/listings?breed=Ragdoll\u0026location=Paris\u0026min_price=100\u0026max_price=2000\u0026gender=female\u0026age_max=12"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027success true\u0027, () =\u003e pm.expect(json.success).to.eql(true));",
+                                                                                    "pm.test(\u0027listings array\u0027, () =\u003e pm.expect(json.data.listings).to.be.an(\u0027array\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "03 Conversations Messages Reviews Reports",
+                     "item":  [
+                                  {
+                                      "name":  "Start conversation",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{customerToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"listing_id\": {{listingId}}\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/conversations"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created or existing\u0027, () =\u003e pm.expect([200,201]).to.include(pm.response.code));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027conversationId\u0027, json.data.conversation.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Send customer message",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{customerToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"content\": \"Bonjour, ce chaton est-il toujours disponible ?\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/conversations/{{conversationId}}/messages"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027messageId\u0027, json.data.message.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Create review",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{customerToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"rating\": 5,\n  \"comment\": \"TrÃ¨s bonne communication.\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/breeders/{{breederId}}/reviews"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027reviewId\u0027, json.data.review.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Report listing",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{customerToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"reason\": \"misleading_information\",\n  \"comment\": \"Postman moderation report.\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/listings/{{listingId}}/reports"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\u0027reportId\u0027, json.data.report.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "04 Admin Moderation",
+                     "description":  "Requires adminToken. If the API has no admin bootstrap route, create/mark the generated admin user in local PostgreSQL before running this folder.",
+                     "item":  [
+                                  {
+                                      "name":  "List pending reports",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{adminToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "url":  "{{baseUrl}}/admin/reports"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027success true\u0027, () =\u003e pm.expect(json.success).to.eql(true));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Accept report",
+                                      "request":  {
+                                                      "method":  "PATCH",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{adminToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"decision\": \"accepted\",\n  \"admin_comment\": \"Accepted from Postman.\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/admin/reports/{{reportId}}"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027HTTP 200\u0027, () =\u003e pm.response.to.have.status(200));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027accepted\u0027, () =\u003e pm.expect(json.data.report.status).to.eql(\u0027accepted\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Ban breeder",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{adminToken}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"restriction_type\": \"ban\",\n  \"reason\": \"Postman moderation ban.\"\n}"
+                                                               },
+                                                      "url":  "{{baseUrl}}/admin/users/{{breederUserId}}/restrictions"
+                                                  },
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027created\u0027, () =\u003e pm.response.to.have.status(201));",
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.test(\u0027banned\u0027, () =\u003e pm.expect(json.data.user.status).to.eql(\u0027banned\u0027));"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  }
+                              ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "suffix",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "customerToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "breederToken",
+                         "value":  ""
+                     },
+                     {
+                         "key":  "adminToken",
+                         "value":  ""
+                     }
+                 ]
+}
