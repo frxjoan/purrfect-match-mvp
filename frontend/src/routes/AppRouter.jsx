@@ -4,6 +4,7 @@ import MainLayout from '../components/MainLayout.jsx'
 import ProtectedRoute from '../components/ProtectedRoute.jsx'
 import AdminDashboardPage from '../pages/AdminDashboardPage.jsx'
 import AdminReportsPage from '../pages/AdminReportsPage.jsx'
+import AdminUsersPage from '../pages/AdminUsersPage.jsx'
 import BreederCertificationPage from '../pages/BreederCertificationPage.jsx'
 import BreederDashboardPage from '../pages/BreederDashboardPage.jsx'
 import BreederListingsPage from '../pages/BreederListingsPage.jsx'
@@ -60,6 +61,7 @@ function AppRouter() {
           <Route path="/admin/verifications/:breederId" element={<ProtectedRoute allowedRole="admin"><PendingVerificationPage /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><AdminReportsPage /></ProtectedRoute>} />
           <Route path="/admin/reports/:reportId" element={<ProtectedRoute allowedRole="admin"><AdminReportsPage /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsersPage /></ProtectedRoute>} />
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>

@@ -35,6 +35,7 @@ const roleNavigation = {
     { to: '/admin/dashboard', label: 'Admin Dashboard' },
     { to: '/admin/verifications', label: 'Verifications' },
     { to: '/admin/reports', label: 'Reports' },
+    { to: '/admin/users', label: 'Users' },
     { to: '/breeder/dashboard', label: 'Breeder Dashboard' },
     { to: '/breeder/listings', label: 'Breeder Listings' },
     { to: '/breeder/certification', label: 'Certification' },
