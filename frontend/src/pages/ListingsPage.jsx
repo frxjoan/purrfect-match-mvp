@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import ListingCard from '../components/ListingCard.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { listings } from '../data/mockData.js'
+import useAuth from '../hooks/useAuth.js'
 
 function ListingsPage() {
+  const { currentUser } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [filters, setFilters] = useState({ breed: '', location: '', maxPrice: '' })
   const [reportListing, setReportListing] = useState(null)
 
@@ -26,6 +31,15 @@ function ListingsPage() {
     setFilters({ breed: '', location: '', maxPrice: '' })
   }
 
+  function handleReport(listing) {
+    if (!currentUser) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+
+    setReportListing(listing)
+  }
+
   return (
     <>
       <SectionHeader
@@ -33,6 +47,11 @@ function ListingsPage() {
         title="Find your next cat"
         description="Search real marketplace-style cards with temporary static data. API integration should fetch from /api/v1/listings once pagination and response needs are finalized."
       />
+      {!currentUser ? (
+        <div className="rounded-lg border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">
+          Listings are public. Message and report actions require login.
+        </div>
+      ) : null}
 
       <form className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-4">
         <label className="block">
@@ -73,7 +92,7 @@ function ListingsPage() {
 
       <section className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {filteredListings.map((listing) => (
-          <ListingCard key={listing.id} listing={listing} onReport={setReportListing} />
+          <ListingCard key={listing.id} listing={listing} onReport={handleReport} />
         ))}
       </section>
 

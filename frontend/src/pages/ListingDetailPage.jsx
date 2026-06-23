@@ -1,14 +1,27 @@
 import { useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { listings } from '../data/mockData.js'
+import useAuth from '../hooks/useAuth.js'
 
 function ListingDetailPage() {
+  const { currentUser } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
   const { listingId } = useParams()
   const [showReport, setShowReport] = useState(false)
   const listing = useMemo(() => listings.find((item) => item.id === listingId), [listingId])
+
+  function handleReport() {
+    if (!currentUser) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+
+    setShowReport(true)
+  }
 
   if (!listing) {
     return (
@@ -47,8 +60,13 @@ function ListingDetailPage() {
           </dl>
           <div className="mt-8 flex flex-wrap gap-3">
             <ActionButton to="/customer/messages">Message breeder</ActionButton>
-            <ActionButton onClick={() => setShowReport(true)} variant="secondary">Report listing</ActionButton>
+            <ActionButton onClick={handleReport} variant="secondary">Report listing</ActionButton>
           </div>
+          {!currentUser ? (
+            <div className="mt-5 rounded-lg border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">
+              Message and report actions require login. You will be returned here after signing in.
+            </div>
+          ) : null}
           <p className="mt-5 text-sm text-slate-500">
             TODO: Fetch listing detail from /api/v1/listings/:listing_id and start conversations through /api/v1/conversations.
           </p>

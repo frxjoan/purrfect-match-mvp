@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import DashboardRedirect from '../components/DashboardRedirect.jsx'
 import MainLayout from '../components/MainLayout.jsx'
 import ProtectedRoute from '../components/ProtectedRoute.jsx'
 import AdminDashboardPage from '../pages/AdminDashboardPage.jsx'
@@ -18,6 +19,7 @@ import LoginPage from '../pages/LoginPage.jsx'
 import NotFoundPage from '../pages/NotFoundPage.jsx'
 import PendingVerificationPage from '../pages/PendingVerificationPage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
+import UnauthorizedPage from '../pages/UnauthorizedPage.jsx'
 
 function AppRouter() {
   return (
@@ -27,10 +29,11 @@ function AppRouter() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
           <Route path="/listings" element={<Navigate to="/customer/listings" replace />} />
-          <Route path="/listings/:listingId" element={<ListingDetailPage />} />
-          <Route path="/dashboard" element={<Navigate to="/breeder/dashboard" replace />} />
+          <Route path="/listings/:listingId" element={<Navigate to="/customer/listings/:listingId" replace />} />
+          <Route path="/dashboard" element={<DashboardRedirect />} />
           <Route path="/messages" element={<Navigate to="/customer/messages" replace />} />
 
           <Route path="/customer" element={<Navigate to="/customer/dashboard" replace />} />

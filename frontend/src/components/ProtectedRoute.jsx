@@ -19,7 +19,16 @@ function ProtectedRoute({ allowedRole = 'customer', children }) {
   const allowedRoles = roleAccess[allowedRole] ?? roleAccess.customer
 
   if (!allowedRoles.includes(currentUser.role)) {
-    return <Navigate replace to={getRoleDashboard(currentUser.role)} />
+    return (
+      <Navigate
+        replace
+        state={{
+          attempted: location.pathname,
+          dashboard: getRoleDashboard(currentUser.role),
+        }}
+        to="/unauthorized"
+      />
+    )
   }
 
   // TODO: Replace demo role checks with backend-backed auth once /api/v1/auth/me is wired.

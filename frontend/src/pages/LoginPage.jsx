@@ -1,20 +1,22 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import useAuth from '../hooks/useAuth.js'
 
 function LoginPage() {
   const { currentUser, getRoleDashboard, signIn } = useAuth()
+  const location = useLocation()
   const navigate = useNavigate()
   const [form, setForm] = useState({ email: '', password: '', role: 'customer' })
   const [notice, setNotice] = useState('')
+  const redirectTarget = location.state?.from
 
   useEffect(() => {
     if (currentUser) {
-      navigate(getRoleDashboard(currentUser.role), { replace: true })
+      navigate(redirectTarget ?? getRoleDashboard(currentUser.role), { replace: true })
     }
-  }, [currentUser, getRoleDashboard, navigate])
+  }, [currentUser, getRoleDashboard, navigate, redirectTarget])
 
   function updateForm(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -26,7 +28,7 @@ function LoginPage() {
     // TODO: Replace demo sign-in with /api/v1/auth/login, JWT storage, and /api/v1/auth/me session restore.
     signIn(demoUser)
     setNotice(`Signed in locally as ${form.role}. Redirecting...`)
-    navigate(getRoleDashboard(form.role), { replace: true })
+    navigate(redirectTarget ?? getRoleDashboard(form.role), { replace: true })
   }
 
   return (
