@@ -1,4 +1,4 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '',
@@ -146,4 +146,67 @@ export async function deleteAdminListing(listingId) {
   return getResponseData(response)
 }
 
+export async function fetchCurrentUserProfile() {
+  const response = await api.get('/users/me')
+  return getResponseData(response)
+}
+
+export async function updateCurrentUserProfile(payload) {
+  const response = await api.patch('/users/me', payload)
+  return getResponseData(response)
+}
+
+export async function fetchConversations() {
+  const response = await api.get('/conversations')
+  return getResponseData(response)
+}
+
+export async function fetchConversation(conversationId) {
+  const response = await api.get(`/conversations/${conversationId}`)
+  return getResponseData(response)
+}
+
+export async function sendConversationMessage(conversationId, content) {
+  const response = await api.post(`/conversations/${conversationId}/messages`, { content })
+  return getResponseData(response)
+}
+
+export async function createListingReport(listingId, payload) {
+  const response = await api.post(`/listings/${listingId}/reports`, payload)
+  return getResponseData(response)
+}
+
+export async function startConversation(listingId) {
+  const response = await api.post('/conversations', { listing_id: listingId })
+  return getResponseData(response)
+}
+
+export async function fetchAdminReports(params = {}) {
+  const response = await api.get('/admin/reports', { params })
+  return getResponseData(response)
+}
+
+export async function reviewAdminReport(reportId, payload) {
+  const response = await api.patch(`/admin/reports/${reportId}`, payload)
+  return getResponseData(response)
+}
+
+export async function fetchAdminCertifications() {
+  const response = await api.get('/admin/certifications')
+  return getResponseData(response)
+}
+
+export async function approveAdminCertification(breederId, payload = {}) {
+  const response = await api.post(`/admin/certifications/${breederId}/approve`, payload)
+  return getResponseData(response)
+}
+
+export async function rejectAdminCertification(breederId, payload) {
+  const response = await api.post(`/admin/certifications/${breederId}/reject`, payload)
+  return getResponseData(response)
+}
+
 export default api
+
+
+

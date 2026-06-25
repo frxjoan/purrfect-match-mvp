@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
 import { listings as demoListings } from '../data/mockData.js'
 import useAuth from '../hooks/useAuth.js'
-import { fetchListingById } from '../services/api.js'
+import { fetchListingById, startConversation } from '../services/api.js'
 
 function ListingDetailPage() {
   const { currentUser } = useAuth()
@@ -41,7 +41,6 @@ function ListingDetailPage() {
 
         const fallbackListing = demoListings.find((item) => String(item.id) === String(listingId)) ?? null
 
-        // TODO: Remove demo fallback once deployed frontend and Flask API data use the same listing IDs.
         setListing(fallbackListing)
         setIsFallbackDemo(Boolean(fallbackListing))
         setLoadError(
@@ -72,6 +71,25 @@ function ListingDetailPage() {
     action()
   }
 
+  async function handleStartConversation() {
+    if (!currentUser?.token) {
+      setNotice('Sign in with a backend account to start a conversation.')
+      return
+    }
+
+    try {
+      await startConversation(listing.id)
+      navigate('/customer/messages')
+    } catch (error) {
+      setNotice(error.response?.data?.error?.message ?? 'Conversation could not be started.')
+    }
+  }
+
+  function handleShare() {
+    navigator.clipboard?.writeText(window.location.href)
+    setNotice('Listing link copied.')
+  }
+
   if (isLoading) {
     return (
       <div className="mx-auto max-w-xl rounded-xl border border-black bg-white p-8 text-center">
@@ -93,16 +111,12 @@ function ListingDetailPage() {
     <>
       <section className="mx-auto w-full max-w-5xl rounded-xl border border-black bg-[#fbfbff] p-5">
         <button className="mb-2 text-3xl" onClick={() => navigate(-1)} type="button">←</button>
-        {loadError ? (
-          <div className="mb-4 rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">
-            {loadError}
-          </div>
-        ) : null}
+        {loadError ? <div className="mb-4 rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">{loadError}</div> : null}
         <div className="rounded-xl border border-black bg-white p-4">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
-            <button className="text-4xl text-slate-900" onClick={() => setNotice('Previous image placeholder.')} type="button">←</button>
+            <button className="text-4xl text-slate-900" onClick={() => setNotice('Previous image unavailable.')} type="button">←</button>
             <img alt={`${listing.name} the ${listing.breed}`} className="mx-auto h-40 w-full max-w-xs object-cover" src={listing.image} />
-            <button className="text-4xl text-slate-900" onClick={() => setNotice('Next image placeholder.')} type="button">→</button>
+            <button className="text-4xl text-slate-900" onClick={() => setNotice('Next image unavailable.')} type="button">→</button>
           </div>
           <p className="mt-1 text-right text-xs text-slate-600">2/5</p>
         </div>
@@ -111,11 +125,11 @@ function ListingDetailPage() {
             <div>
               <h1 className="text-base font-semibold">{listing.name} {listing.breed}</h1>
               <p>by {listing.breeder}</p>
-              <p className="text-yellow-500">★★★★★ <span className="text-slate-700">(83 Reviews)</span></p>
+              <p className="text-yellow-500">★★★★★ <span className="text-slate-700">Reviews</span></p>
             </div>
             <div className="rounded-xl border border-black bg-white p-3">
               <p>{listing.location}</p>
-              <p>Born 20 juin, 2022</p>
+              <p>{listing.age}</p>
               <p className="mt-2 font-semibold">{listing.price.toLocaleString()} €</p>
             </div>
             <div>
@@ -125,25 +139,12 @@ function ListingDetailPage() {
           </aside>
           <section className="flex flex-col justify-center gap-5">
             <div className="grid gap-4 sm:grid-cols-2">
-              <ActionButton onClick={() => requireLoginOrRun(() => navigate('/customer/messages'))} variant="secondary">
-                Send a message
-              </ActionButton>
-              <ActionButton onClick={() => setNotice('Share action placeholder.')} variant="secondary">
-                Share
-              </ActionButton>
+              <ActionButton onClick={() => requireLoginOrRun(handleStartConversation)} variant="secondary">Send a message</ActionButton>
+              <ActionButton onClick={handleShare} variant="secondary">Share</ActionButton>
             </div>
-            <ActionButton className="w-full bg-[#ff7bac] hover:bg-[#f4679d]" onClick={() => requireLoginOrRun(() => setShowReport(true))} variant="danger">
-              Report this announce
-            </ActionButton>
-            {!currentUser ? (
-              <div className="rounded-xl border border-black bg-white p-3 text-center text-xs">
-                Message and report actions require login. You will be returned here after signing in.
-              </div>
-            ) : null}
+            <ActionButton className="w-full bg-[#ff7bac] hover:bg-[#f4679d]" onClick={() => requireLoginOrRun(() => setShowReport(true))} variant="danger">Report this announce</ActionButton>
+            {!currentUser ? <div className="rounded-xl border border-black bg-white p-3 text-center text-xs">Message and report actions require login. You will be returned here after signing in.</div> : null}
             {notice ? <p className="text-center text-sm font-semibold text-[#6c5ce7]">{notice}</p> : null}
-            <p className="text-center text-xs text-slate-500">
-              TODO: Start conversations through /api/v1/conversations once JWT auth is connected.
-            </p>
             {isFallbackDemo ? <p className="text-center text-xs text-slate-500">Demo fallback data is active for this announcement.</p> : null}
           </section>
         </div>

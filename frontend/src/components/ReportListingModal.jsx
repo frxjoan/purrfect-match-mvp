@@ -1,13 +1,30 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
+import { createListingReport } from '../services/api.js'
 import ActionButton from './ActionButton.jsx'
+
+const reportReasons = [
+  ['misleading_information', 'Misleading information'],
+  ['inappropriate_content', 'Inappropriate content'],
+  ['suspected_scam', 'Suspected scam'],
+  ['animal_abuse_or_neglect', 'Animal abuse or neglect'],
+  ['duplicate_listing', 'Duplicate listing'],
+  ['wrong_category', 'Wrong category'],
+  ['other', 'Other'],
+]
 
 function ReportListingModal({ listing, onClose }) {
   const [details, setDetails] = useState('')
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [reason, setReason] = useState('misleading_information')
   const [step, setStep] = useState('details')
 
   useEffect(() => {
     if (listing) {
       setDetails('')
+      setError('')
+      setIsSubmitting(false)
+      setReason('misleading_information')
       setStep('details')
     }
   }, [listing])
@@ -16,10 +33,22 @@ function ReportListingModal({ listing, onClose }) {
     return null
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    // TODO: Submit report details and optional screenshot to /api/v1/listings/:listing_id/reports.
-    setStep('thanks')
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      await createListingReport(listing.id, {
+        comment: details.trim() || undefined,
+        reason,
+      })
+      setStep('thanks')
+    } catch (submitError) {
+      setError(submitError.response?.data?.error?.message ?? 'Report could not be submitted.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -37,24 +66,24 @@ function ReportListingModal({ listing, onClose }) {
             <button className="text-3xl" onClick={onClose} type="button">←</button>
             <h2 className="text-2xl font-medium">Report announce</h2>
           </div>
-          <p className="text-center text-sm">Please provide more information (optional)</p>
           <label className="mx-auto mt-5 block max-w-xs">
-            <span className="sr-only">Describe the issue</span>
-            <textarea
-              className="min-h-24 w-full rounded-lg border border-black bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#c9bfff]"
-              onChange={(event) => setDetails(event.target.value)}
-              placeholder="Describe the issue..."
-              value={details}
-            />
+            <span className="block text-sm font-semibold">Reason</span>
+            <select className="mt-2 w-full rounded-lg border border-black bg-white px-4 py-3 text-sm" onChange={(event) => setReason(event.target.value)} value={reason}>
+              {reportReasons.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
           </label>
           <label className="mx-auto mt-5 block max-w-xs">
-            <span className="block text-sm">Adds screenshots (optional)</span>
-            <div className="mt-2 flex h-20 cursor-pointer items-center justify-center rounded-lg border border-black bg-white text-3xl">▣</div>
-            <input className="sr-only" type="file" />
+            <span className="block text-sm">Please provide more information (optional)</span>
+            <textarea className="mt-2 min-h-24 w-full rounded-lg border border-black bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => setDetails(event.target.value)} placeholder="Describe the issue..." value={details} />
           </label>
+          <label className="mx-auto mt-5 block max-w-xs opacity-60">
+            <span className="block text-sm">Screenshot upload unavailable</span>
+            <div className="mt-2 flex h-20 items-center justify-center rounded-lg border border-dashed border-black bg-white text-xs">TODO: backend report screenshot endpoint needed</div>
+          </label>
+          {error ? <p className="mt-5 text-center text-sm font-semibold text-[#c24b78]">{error}</p> : null}
           <div className="mt-8 flex justify-center gap-4">
             <ActionButton onClick={onClose} type="button">Close</ActionButton>
-            <ActionButton type="submit">Submit</ActionButton>
+            <ActionButton disabled={isSubmitting} type="submit">{isSubmitting ? 'Submitting...' : 'Submit'}</ActionButton>
           </div>
         </form>
       )}
