@@ -63,6 +63,12 @@ function LoginPage() {
 
   function handleQuickRole(role) {
     updateForm('role', role)
+
+    if (role === 'admin') {
+      setNotice('Use the backend login form with an admin account to access live dashboard stats.')
+      return
+    }
+
     signInRole(role)
   }
 
@@ -74,6 +80,9 @@ function LoginPage() {
         </ActionButton>
         <ActionButton className="w-full" onClick={() => handleQuickRole('customer')} type="button">
           Sign in Customer
+        </ActionButton>
+        <ActionButton className="w-full" onClick={() => handleQuickRole('admin')} type="button">
+          Sign in Admin
         </ActionButton>
         <ActionButton className="w-full" onClick={() => navigate('/register')} type="button">
           Sign up
