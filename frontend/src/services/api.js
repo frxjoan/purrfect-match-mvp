@@ -136,4 +136,9 @@ export async function fetchAdminStats() {
   return getResponseData(response)
 }
 
+export async function deleteAdminListing(listingId) {
+  const response = await api.delete(`/admin/listings/${listingId}`)
+  return getResponseData(response)
+}
+
 export default api

@@ -363,6 +363,33 @@ def review_listing_report(report_id):
     }), 200
 
 
+
+@admin_bp.delete("/listings/<int:listing_id>")
+@jwt_required()
+def delete_listing_as_admin(listing_id):
+    admin = get_current_admin()
+    if not admin:
+        return admin_required_response()
+
+    listing = db.session.get(CatListing, listing_id)
+
+    if not listing:
+        return jsonify({
+            "success": False,
+            "error": {"message": "Listing not found."},
+        }), 404
+
+    listing.status = "archived"
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "message": "Listing archived by admin.",
+            "listing": listing.to_dict(),
+        },
+    }), 200
+
 @admin_bp.post("/users/<int:user_id>/restrictions")
 @jwt_required()
 def restrict_user(user_id):
