@@ -2,12 +2,16 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
+from sqlalchemy import func
 
 from app.extensions import db
 from app.models.account_restriction import AccountRestriction, RESTRICTION_TYPES
 from app.models.breeder_profile import BreederProfile
 from app.models.cat_listing import CatListing
+from app.models.conversation import Conversation
 from app.models.listing_report import REPORT_STATUSES, ListingReport
+from app.models.message import Message
+from app.models.reviews import Review
 from app.models.user import User
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/v1/admin')
@@ -86,6 +90,74 @@ def apply_account_restriction(user, admin, restriction_type, reason, expires_at=
         user.suspended_until = expires_at
 
     return restriction, archived_count
+
+
+def count_rows(model):
+    return db.session.query(func.count(model.id)).scalar() or 0
+
+
+def count_users_by_role(role):
+    return (
+        db.session.query(func.count(User.id))
+        .filter(User.role == role)
+        .scalar()
+        or 0
+    )
+
+
+def count_listings_by_status(status):
+    return (
+        db.session.query(func.count(CatListing.id))
+        .filter(CatListing.status == status)
+        .scalar()
+        or 0
+    )
+
+
+@admin_bp.get("/stats")
+@jwt_required()
+def get_admin_stats():
+    admin = get_current_admin()
+    if not admin:
+        return admin_required_response()
+
+    pending_certifications = (
+        db.session.query(func.count(BreederProfile.id))
+        .filter(BreederProfile.certification_status == "pending")
+        .scalar()
+        or 0
+    )
+    pending_reports = (
+        db.session.query(func.count(ListingReport.id))
+        .filter(ListingReport.status == "pending")
+        .scalar()
+        or 0
+    )
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "stats": {
+                "total_users": count_rows(User),
+                "total_customers": count_users_by_role("customer"),
+                "total_breeders": count_users_by_role("breeder"),
+                "total_admins": count_users_by_role("admin"),
+                "total_listings": count_rows(CatListing),
+                "active_listings": (
+                    count_rows(CatListing) - count_listings_by_status("archived")
+                ),
+                "available_listings": count_listings_by_status("available"),
+                "reserved_listings": count_listings_by_status("reserved"),
+                "sold_listings": count_listings_by_status("sold"),
+                "archived_listings": count_listings_by_status("archived"),
+                "pending_certifications": pending_certifications,
+                "pending_reports": pending_reports,
+                "total_reviews": count_rows(Review),
+                "total_conversations": count_rows(Conversation),
+                "total_messages": count_rows(Message),
+            },
+        },
+    }), 200
 
 @admin_bp.get("/certifications")
 @jwt_required()

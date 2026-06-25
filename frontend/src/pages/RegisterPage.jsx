@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
+import { registerUser } from '../services/api.js'
 
 function RegisterPage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', role: 'customer' })
@@ -10,15 +11,26 @@ function RegisterPage() {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    // TODO: Connect to /api/v1/auth/register and branch breeder onboarding after account creation.
-    setNotice('Registration captured locally as a frontend placeholder.')
+    setNotice('')
+
+    try {
+      await registerUser({
+        email: form.email,
+        password: form.password,
+        first_name: form.firstName,
+        last_name: form.lastName,
+      })
+      setNotice('Account created in the backend. You can sign in now.')
+    } catch (error) {
+      setNotice(error.response?.data?.error?.message ?? 'Registration failed.')
+    }
   }
 
   return (
     <>
-      <SectionHeader eyebrow="Registration" title="Create an account" description="Usable registration UI with controlled inputs and clear backend TODOs." />
+      <SectionHeader eyebrow="Registration" title="Create an account" description="Create a backend account for customer access. Breeder onboarding still starts from certification." />
       <form className="mx-auto grid w-full max-w-3xl gap-5 rounded-lg border border-slate-200 bg-white p-6 shadow-sm md:grid-cols-2" onSubmit={handleSubmit}>
         {[
           ['firstName', 'First name', 'text'],
@@ -39,7 +51,7 @@ function RegisterPage() {
           </select>
         </label>
         <ActionButton className="md:col-span-2" disabled={!form.firstName || !form.lastName || !form.email || form.password.length < 8} type="submit">
-          Create account placeholder
+          Create account
         </ActionButton>
         {notice ? <p className="text-sm font-semibold text-teal-700 md:col-span-2">{notice}</p> : null}
       </form>

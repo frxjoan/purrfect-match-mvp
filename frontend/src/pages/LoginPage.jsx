@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import { loginUser } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
 
 function LoginPage() {
@@ -26,9 +27,26 @@ function LoginPage() {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    signInRole(form.role)
+    setNotice('')
+
+    try {
+      const data = await loginUser({
+        email: form.email,
+        password: form.password,
+      })
+      const user = {
+        ...data.user,
+        breederVerificationStatus: data.user?.breeder_profile?.certification_status,
+        token: data.token,
+      }
+
+      signIn(user)
+      navigate(redirectTarget ?? getRoleDashboard(user.role), { replace: true })
+    } catch (error) {
+      setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your backend account credentials.')
+    }
   }
 
   function signInRole(role) {
@@ -80,7 +98,7 @@ function LoginPage() {
             <input
               className="mt-1 w-full rounded-lg border border-black bg-white px-3 py-2 text-sm"
               onChange={(event) => updateForm('password', event.target.value)}
-              placeholder="Optional for demo"
+              placeholder="password123"
               type="password"
               value={form.password}
             />
@@ -108,7 +126,7 @@ function LoginPage() {
           </label>
         ) : null}
         <ActionButton className="mt-4 w-full" type="submit">
-          Continue as selected role
+          Sign in with backend
         </ActionButton>
         {notice ? <p className="mt-3 text-center text-sm font-semibold text-teal-700">{notice}</p> : null}
       </form>

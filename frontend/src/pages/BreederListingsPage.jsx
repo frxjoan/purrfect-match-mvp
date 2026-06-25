@@ -1,110 +1,103 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
-import { breederListings } from '../data/mockData.js'
+import { createListing, fetchListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
 
-const BREEDER_LISTINGS_KEY = 'purrfect-match-breeder-listings'
-
 const emptyListingForm = {
+  age_months: '',
   breed: '',
   description: '',
-  imageUrl: '',
+  gender: 'female',
+  images: [],
   location: '',
   price: '',
   title: '',
 }
 
-function getStoredListings() {
-  try {
-    return JSON.parse(window.localStorage.getItem(BREEDER_LISTINGS_KEY)) ?? breederListings
-  } catch {
-    return breederListings
-  }
+function getErrorMessage(error, fallback) {
+  return error.response?.data?.error?.message ?? fallback
 }
 
 function BreederListingsPage() {
   const { currentUser } = useAuth()
   const breederVerified = currentUser?.breederVerificationStatus === 'verified' || currentUser?.role === 'admin'
   const [listingForm, setListingForm] = useState(emptyListingForm)
-  const [listings, setListings] = useState(getStoredListings)
-  const [editingListingId, setEditingListingId] = useState(null)
+  const [listings, setListings] = useState([])
+  const [loadingListings, setLoadingListings] = useState(true)
   const [notice, setNotice] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  function persistListings(nextListings) {
-    // TODO: Replace local listing persistence with /api/v1/listings create/update/delete calls.
-    window.localStorage.setItem(BREEDER_LISTINGS_KEY, JSON.stringify(nextListings))
-    return nextListings
-  }
+  useEffect(() => {
+    let ignore = false
+
+    async function loadListings() {
+      try {
+        const result = await fetchListings()
+        if (!ignore) {
+          setListings(result.listings)
+          setNotice('')
+        }
+      } catch (error) {
+        if (!ignore) {
+          setNotice(getErrorMessage(error, 'Backend listings are unavailable.'))
+        }
+      } finally {
+        if (!ignore) {
+          setLoadingListings(false)
+        }
+      }
+    }
+
+    loadListings()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   function updateForm(field, value) {
     setListingForm((current) => ({ ...current, [field]: value }))
   }
 
   function resetForm() {
-    setEditingListingId(null)
     setListingForm(emptyListingForm)
   }
 
-  function handleCreateOrUpdate(event) {
+  async function handleCreate(event) {
     event.preventDefault()
+    setNotice('')
 
     if (!breederVerified) {
       setNotice('Create listing is disabled until breeder verification is approved.')
       return
     }
 
-    if (editingListingId) {
-      setListings((currentListings) =>
-        persistListings(
-          currentListings.map((listing) =>
-            listing.id === editingListingId
-              ? {
-                  ...listing,
-                  imageUrl: listingForm.imageUrl,
-                  price: `$${Number(listingForm.price || 0).toLocaleString()}`,
-                  status: 'Draft',
-                  title: listingForm.title,
-                }
-              : listing,
-          ),
-        ),
-      )
-      setNotice('Listing updated locally for this demo.')
-      resetForm()
+    if (!currentUser?.token) {
+      setNotice('Sign in with a backend breeder account before creating a listing.')
       return
     }
 
-    const nextListing = {
-      id: Date.now(),
-      imageUrl: listingForm.imageUrl,
-      inquiries: 0,
-      price: `$${Number(listingForm.price || 0).toLocaleString()}`,
-      status: 'Draft',
-      title: listingForm.title,
+    if (!listingForm.images.length) {
+      setNotice('Add at least one image file before creating the listing.')
+      return
     }
 
-    setListings((currentListings) => persistListings([...currentListings, nextListing]))
-    setNotice('Listing created locally for this demo.')
-    resetForm()
+    setSubmitting(true)
+    try {
+      const createdListing = await createListing(listingForm)
+      setListings((currentListings) => [createdListing, ...currentListings])
+      setNotice('Listing created in the backend database.')
+      resetForm()
+    } catch (error) {
+      setNotice(getErrorMessage(error, 'Listing creation failed.'))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  function editListing(listing) {
-    setEditingListingId(listing.id)
-    setListingForm({
-      breed: '',
-      description: '',
-      imageUrl: listing.imageUrl ?? '',
-      location: '',
-      price: listing.price.replace(/[$,]/g, ''),
-      title: listing.title,
-    })
-    setNotice('Editing listing locally. Save changes to persist in this browser.')
-  }
-
-  function deleteListing(listingId) {
-    setListings((currentListings) => persistListings(currentListings.filter((listing) => listing.id !== listingId)))
-    setNotice('Listing deleted locally for this demo.')
+  function handleFiles(event) {
+    updateForm('images', Array.from(event.target.files ?? []))
   }
 
   return (
@@ -112,31 +105,31 @@ function BreederListingsPage() {
       <SectionHeader
         eyebrow="Breeder listings"
         title="Manage listings"
-        description="Verified breeders can create and edit local demo listings with image URLs until backend mutations are connected."
+        description="Create listings through the backend API with images stored on the listing record."
       />
       <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-950">Current listings</h2>
+          <h2 className="text-xl font-bold text-slate-950">Current backend listings</h2>
           <div className="mt-5 space-y-4">
+            {loadingListings ? <p className="text-sm text-slate-500">Loading listings...</p> : null}
+            {!loadingListings && listings.length === 0 ? <p className="text-sm text-slate-500">No backend listings yet.</p> : null}
             {listings.map((listing) => (
               <article key={listing.id} className="rounded-lg border border-slate-200 p-4">
-                {listing.imageUrl ? <img alt="" className="mb-4 h-32 w-full rounded-lg object-cover" src={listing.imageUrl} /> : null}
+                {listing.image ? <img alt="" className="mb-4 h-32 w-full rounded-lg object-cover" src={listing.image} /> : null}
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="font-semibold text-slate-950">{listing.title}</p>
-                    <p className="mt-1 text-sm text-slate-500">{listing.status} · {listing.price}</p>
+                    <p className="mt-1 text-sm text-slate-500">{listing.status} - ${Number(listing.price || 0).toLocaleString()}</p>
+                    <p className="mt-1 text-sm text-slate-500">{listing.breed} - {listing.location}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <ActionButton onClick={() => editListing(listing)} variant="secondary">Edit</ActionButton>
-                    <ActionButton onClick={() => deleteListing(listing.id)} variant="danger">Delete</ActionButton>
-                  </div>
+                  <ActionButton to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
                 </div>
               </article>
             ))}
           </div>
         </div>
-        <form className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleCreateOrUpdate}>
-          <h2 className="text-xl font-bold text-slate-950">{editingListingId ? 'Edit listing' : 'Create listing'}</h2>
+        <form className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleCreate}>
+          <h2 className="text-xl font-bold text-slate-950">Create listing</h2>
           {!breederVerified ? (
             <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               Listing creation is disabled until this breeder is verified by admin.
@@ -146,25 +139,35 @@ function BreederListingsPage() {
             {[
               ['title', 'Title', 'text'],
               ['breed', 'Breed', 'text'],
+              ['age_months', 'Age in months', 'number'],
               ['price', 'Price', 'number'],
               ['location', 'Location', 'text'],
-              ['imageUrl', 'Image URL', 'url'],
             ].map(([field, label, type]) => (
-              <label key={field} className={field === 'imageUrl' ? 'block md:col-span-2' : 'block'}>
+              <label key={field} className={field === 'location' ? 'block md:col-span-2' : 'block'}>
                 <span className="text-sm font-semibold text-slate-700">{label}</span>
-                <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm(field, event.target.value)} type={type} value={listingForm[field]} />
+                <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" min="0" onChange={(event) => updateForm(field, event.target.value)} type={type} value={listingForm[field]} />
               </label>
             ))}
+            <label className="block md:col-span-2">
+              <span className="text-sm font-semibold text-slate-700">Gender</span>
+              <select className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm('gender', event.target.value)} value={listingForm.gender}>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+              </select>
+            </label>
+            <label className="block md:col-span-2">
+              <span className="text-sm font-semibold text-slate-700">Images</span>
+              <input accept="image/*" className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" multiple onChange={handleFiles} type="file" />
+            </label>
             <label className="block md:col-span-2">
               <span className="text-sm font-semibold text-slate-700">Description</span>
               <textarea className="mt-2 min-h-28 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm('description', event.target.value)} value={listingForm.description} />
             </label>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <ActionButton disabled={!breederVerified || !listingForm.title || !listingForm.price} type="submit">
-              {editingListingId ? 'Save listing changes' : 'Create listing'}
+            <ActionButton disabled={!breederVerified || submitting || !listingForm.title || !listingForm.price || !listingForm.age_months || !listingForm.breed || !listingForm.location || !listingForm.images.length} type="submit">
+              {submitting ? 'Creating...' : 'Create listing'}
             </ActionButton>
-            {editingListingId ? <ActionButton onClick={resetForm} variant="secondary">Cancel edit</ActionButton> : null}
           </div>
           {notice ? <p className="mt-3 text-sm font-semibold text-teal-700">{notice}</p> : null}
         </form>

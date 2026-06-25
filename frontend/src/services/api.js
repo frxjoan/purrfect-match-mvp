@@ -2,14 +2,25 @@ import axios from 'axios'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '',
-  headers: {
-    'Content-Type': 'application/json',
-  },
   timeout: 10000,
 })
 
-// TODO: Add auth token injection once login stores the JWT returned by /api/v1/auth/login.
 // TODO: Keep all future Flask API calls in this module or small service modules that import this client.
+
+api.interceptors.request.use((config) => {
+  try {
+    const storedUser = window.localStorage.getItem('purrfect-match-demo-user')
+    const currentUser = storedUser ? JSON.parse(storedUser) : null
+
+    if (currentUser?.token) {
+      config.headers.Authorization = `Bearer ${currentUser.token}`
+    }
+  } catch {
+    // Ignore malformed demo session storage and continue unauthenticated.
+  }
+
+  return config
+})
 
 function getResponseData(response) {
   return response.data?.data ?? response.data
@@ -91,6 +102,38 @@ export async function fetchListings(params = {}) {
 export async function fetchListingById(listingId) {
   const response = await api.get(`/listings/${listingId}`)
   return normalizeListing(getResponseData(response))
+}
+
+export async function loginUser(credentials) {
+  const response = await api.post('/auth/login', credentials)
+  return getResponseData(response)
+}
+
+export async function registerUser(payload) {
+  const response = await api.post('/auth/register', payload)
+  return getResponseData(response)
+}
+
+export async function createListing(payload) {
+  const formData = new FormData()
+
+  Object.entries(payload).forEach(([key, value]) => {
+    if (key !== 'images' && value !== undefined && value !== null) {
+      formData.append(key, value)
+    }
+  })
+
+  payload.images.forEach((image) => {
+    formData.append('images', image)
+  })
+
+  const response = await api.post('/listings', formData)
+  return normalizeListing(getResponseData(response))
+}
+
+export async function fetchAdminStats() {
+  const response = await api.get('/admin/stats')
+  return getResponseData(response)
 }
 
 export default api
