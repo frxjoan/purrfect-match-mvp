@@ -183,6 +183,50 @@ def report_listing(listing_id):
     }), 201
 
 
+@listings_bp.delete("/<int:listing_id>")
+@jwt_required()
+def delete_own_listing(listing_id):
+    user_id = get_jwt_identity()
+    user = db.session.get(User, int(user_id))
+
+    if not user:
+        return jsonify({
+            "success": False,
+            "error": {"message": "User not found."},
+        }), 404
+
+    if not user.breeder_profile:
+        return jsonify({
+            "success": False,
+            "error": {"message": "Breeder profile required."},
+        }), 403
+
+    listing = db.session.get(CatListing, listing_id)
+
+    if not listing or listing.status == "archived":
+        return jsonify({
+            "success": False,
+            "error": {"message": "Listing not found."},
+        }), 404
+
+    if listing.breeder_id != user.breeder_profile.id:
+        return jsonify({
+            "success": False,
+            "error": {"message": "You can only delete your own listings."},
+        }), 403
+
+    listing.status = "archived"
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "message": "Listing deleted successfully.",
+            "listing": listing.to_dict(),
+        },
+    }), 200
+
+
 @listings_bp.post("")
 @jwt_required()
 def create_listing():

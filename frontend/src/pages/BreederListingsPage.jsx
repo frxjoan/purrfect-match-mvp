@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
-import { createListing, fetchListings } from '../services/api.js'
+import { createListing, deleteListing, fetchListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
 
 const emptyListingForm = {
@@ -27,6 +27,7 @@ function BreederListingsPage() {
   const [loadingListings, setLoadingListings] = useState(true)
   const [notice, setNotice] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [deletingListingId, setDeletingListingId] = useState(null)
 
   useEffect(() => {
     let ignore = false
@@ -100,6 +101,26 @@ function BreederListingsPage() {
     updateForm('images', Array.from(event.target.files ?? []))
   }
 
+  async function handleDelete(listingId) {
+    setNotice('')
+
+    if (!currentUser?.token) {
+      setNotice('Sign in with a backend breeder account before deleting a listing.')
+      return
+    }
+
+    setDeletingListingId(listingId)
+    try {
+      await deleteListing(listingId)
+      setListings((currentListings) => currentListings.filter((listing) => listing.id !== listingId))
+      setNotice('Listing deleted from the public catalogue.')
+    } catch (error) {
+      setNotice(getErrorMessage(error, 'Listing deletion failed.'))
+    } finally {
+      setDeletingListingId(null)
+    }
+  }
+
   return (
     <>
       <SectionHeader
@@ -122,7 +143,12 @@ function BreederListingsPage() {
                     <p className="mt-1 text-sm text-slate-500">{listing.status} - ${Number(listing.price || 0).toLocaleString()}</p>
                     <p className="mt-1 text-sm text-slate-500">{listing.breed} - {listing.location}</p>
                   </div>
-                  <ActionButton to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
+                  <div className="flex flex-wrap gap-2">
+                    <ActionButton to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
+                    <ActionButton disabled={deletingListingId === listing.id} onClick={() => handleDelete(listing.id)} variant="danger">
+                      {deletingListingId === listing.id ? 'Deleting...' : 'Delete'}
+                    </ActionButton>
+                  </div>
                 </div>
               </article>
             ))}

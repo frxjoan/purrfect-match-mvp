@@ -131,6 +131,11 @@ export async function createListing(payload) {
   return normalizeListing(getResponseData(response))
 }
 
+export async function deleteListing(listingId) {
+  const response = await api.delete(`/listings/${listingId}`)
+  return getResponseData(response)
+}
+
 export async function fetchAdminStats() {
   const response = await api.get('/admin/stats')
   return getResponseData(response)
