@@ -1,7 +1,10 @@
+import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
-import { adminStats, pendingBreeders, reports } from '../data/mockData.js'
+import { pendingBreeders, reports } from '../data/mockData.js'
+import { fetchAdminStats } from '../services/api.js'
+import useAuth from '../hooks/useAuth.js'
 
 const ADMIN_VERIFICATIONS_KEY = 'purrfect-match-admin-verifications'
 const ADMIN_REPORTS_KEY = 'purrfect-match-admin-reports'
@@ -15,9 +18,54 @@ function readStoredItems(key, fallback) {
 }
 
 function AdminDashboardPage() {
+  const { currentUser } = useAuth()
+  const [backendStats, setBackendStats] = useState(null)
+  const [statsError, setStatsError] = useState('')
+  const [statsLoading, setStatsLoading] = useState(Boolean(currentUser?.token))
   const verifications = readStoredItems(ADMIN_VERIFICATIONS_KEY, pendingBreeders)
   const moderatedReports = readStoredItems(ADMIN_REPORTS_KEY, reports)
   const openReports = moderatedReports.filter((report) => report.status !== 'Resolved')
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadStats() {
+      if (!currentUser?.token) {
+        setStatsError('Sign in with a backend admin account to load live dashboard stats.')
+        setStatsLoading(false)
+        return
+      }
+
+      setStatsLoading(true)
+      try {
+        const data = await fetchAdminStats()
+        if (!ignore) {
+          setBackendStats(data.stats)
+          setStatsError('')
+        }
+      } catch (error) {
+        if (!ignore) {
+          setStatsError(error.response?.data?.error?.message ?? 'Backend admin stats unavailable.')
+        }
+      } finally {
+        if (!ignore) {
+          setStatsLoading(false)
+        }
+      }
+    }
+
+    loadStats()
+
+    return () => {
+      ignore = true
+    }
+  }, [currentUser?.token])
+
+  const stats = useMemo(() => ([
+    { label: 'Total users', value: String(backendStats?.total_users ?? '-'), note: 'Backend /admin/stats' },
+    { label: 'Breeders', value: String(backendStats?.total_breeders ?? '-'), note: `${backendStats?.pending_certifications ?? '-'} pending review` },
+    { label: 'Customers', value: String(backendStats?.total_customers ?? '-'), note: 'Registered customer accounts' },
+  ]), [backendStats])
 
   return (
     <>
@@ -27,10 +75,12 @@ function AdminDashboardPage() {
         description="Review platform health, breeder verification queues, and listing reports."
       />
       <section className="grid gap-4 md:grid-cols-3">
-        {adminStats.map((stat) => <StatCard key={stat.label} {...stat} />)}
-        <StatCard label="Verification queue" value={String(verifications.length)} note="Local demo queue" />
-        <StatCard label="Open reports" value={String(openReports.length)} note="Moderation follow-up needed" />
-        <StatCard label="Admin reviews" value="Ready" note="Placeholder workflows connected locally" />
+        {stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
+        <StatCard label="Verification queue" value={String(backendStats?.pending_certifications ?? '-')} note="Backend queue" />
+        <StatCard label="Open reports" value={String(backendStats?.pending_reports ?? '-')} note="Moderation follow-up needed" />
+        <StatCard label="Admin reviews" value={String(backendStats?.total_reviews ?? '-')} note="Backend reviews" />
+        {statsLoading ? <p className="text-sm font-semibold text-slate-400 md:col-span-3">Loading backend admin stats...</p> : null}
+        {statsError ? <p className="text-sm font-semibold text-amber-700 md:col-span-3">{statsError}</p> : null}
       </section>
       <section className="grid gap-5 lg:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">

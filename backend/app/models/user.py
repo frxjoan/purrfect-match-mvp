@@ -111,6 +111,11 @@ class User(db.Model):
             "phone_number": self.phone_number,
             "location": self.location,
             "profile_picture_url": self.profile_picture_url,
+            "breeder_profile": (
+                self.breeder_profile.to_dict()
+                if self.breeder_profile
+                else None
+            ),
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
