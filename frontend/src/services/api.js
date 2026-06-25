@@ -1,4 +1,4 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '',
@@ -91,6 +91,17 @@ export async function fetchListings(params = {}) {
 export async function fetchListingById(listingId) {
   const response = await api.get(`/listings/${listingId}`)
   return normalizeListing(getResponseData(response))
+}
+
+export async function registerAccount({ email, firstName, lastName, password }) {
+  const response = await api.post('/auth/register', {
+    email,
+    first_name: firstName,
+    last_name: lastName,
+    password,
+  })
+
+  return getResponseData(response)
 }
 
 export default api
