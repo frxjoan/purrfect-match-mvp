@@ -27,7 +27,7 @@ function HomePage() {
       setLoadError('')
 
       try {
-        const result = await fetchListings({ status: 'available' })
+        const result = await fetchListings()
 
         if (isActive) {
           setListings(result.listings)

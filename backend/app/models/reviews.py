@@ -35,13 +35,27 @@ class Review(db.Model):
     )
 
     def to_dict(self):
+        reviewer_name = None
+        reviewer = None
+
+        if self.reviewer:
+            reviewer_name = " ".join(
+                value for value in [self.reviewer.first_name, self.reviewer.last_name]
+                if value
+            ) or None
+            reviewer = {
+                "id": self.reviewer.id,
+                "display_name": reviewer_name,
+                "profile_picture_url": self.reviewer.profile_picture_url,
+            }
+
         return {
             "id": self.id,
             "reviewer_id": self.reviewer_id,
             "breeder_id": self.breeder_id,
             "rating": self.rating,
             "comment": self.comment,
+            "reviewer": reviewer,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
-    

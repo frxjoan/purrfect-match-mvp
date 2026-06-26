@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import ActionButton from './ActionButton.jsx'
 
 function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
@@ -12,6 +13,12 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
       )}
       <div className="min-w-0">
         <h2 className="truncate text-sm font-semibold text-slate-950">{listing.name || listing.title}</h2>
+        {listing.breederId ? (
+          <Link className="mt-1 inline-flex max-w-full items-center gap-2 text-slate-800 underline-offset-2 hover:underline" to={`/breeders/${listing.breederId}`}>
+            {listing.breederPhoto ? <img alt="" className="h-5 w-5 rounded-full object-cover" src={listing.breederPhoto} /> : null}
+            <span className="truncate">{listing.breeder || 'Breeder profile'}</span>
+          </Link>
+        ) : null}
         <p className="mt-1 text-slate-800">{listing.breed}</p>
         {listing.age ? <p className="text-slate-800">{listing.age}</p> : null}
         <p className="truncate text-slate-800">{listing.location}</p>
@@ -20,15 +27,15 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
       </div>
       <div className="flex flex-col items-end justify-between">
         {listing.status ? <span className="rounded-full bg-[#f7f3ff] px-2 py-1 text-[10px] text-slate-700">{listing.status}</span> : null}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col items-end gap-2">
           {onToggleSave ? (
             <button
               aria-label={isSaved ? 'Unsave listing' : 'Save listing'}
-              className="text-2xl leading-none text-black"
+              className="rounded-full border border-black bg-white px-2 py-1 text-[11px] font-semibold"
               onClick={() => onToggleSave(listing.id)}
               type="button"
             >
-              {isSaved ? '?' : '?'}
+              {isSaved ? 'Saved' : 'Save'}
             </button>
           ) : null}
           {onReport ? (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
 import useAuth from '../hooks/useAuth.js'
@@ -34,7 +34,7 @@ function ListingDetailPage() {
       } catch (error) {
         if (isActive) {
           setListing(null)
-          setLoadError(error.response?.data?.error?.message ?? 'Listing details could not be loaded from the backend.')
+          setLoadError(error.response?.data?.error?.message ?? 'Listing details could not be loaded.')
         }
       } finally {
         if (isActive) {
@@ -137,7 +137,17 @@ function ListingDetailPage() {
           <aside className="space-y-3 text-sm">
             <div>
               <h1 className="text-base font-semibold">{listing.name || listing.title}</h1>
-              {listing.breeder ? <p>by {listing.breeder}</p> : null}
+              {listing.breederId ? (
+                <Link className="mt-2 flex items-center gap-3 rounded-xl border border-black bg-white p-3 hover:bg-[#f7f3ff]" to={`/breeders/${listing.breederId}`}>
+                  <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-300 bg-[#f8f7fb] text-xs font-semibold text-[#6c5ce7]">
+                    {listing.breederPhoto ? <img alt="" className="h-full w-full object-cover" src={listing.breederPhoto} /> : (listing.breeder || 'PM').slice(0, 2).toUpperCase()}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-semibold text-slate-950">{listing.breeder || 'Breeder profile'}</span>
+                    {listing.breederOwnerName ? <span className="block truncate text-xs text-slate-600">{listing.breederOwnerName}</span> : null}
+                  </span>
+                </Link>
+              ) : null}
             </div>
             <div className="rounded-xl border border-black bg-white p-3">
               <p>{listing.breed}</p>
@@ -157,6 +167,7 @@ function ListingDetailPage() {
               <ActionButton onClick={() => requireLoginOrRun(handleStartConversation)} variant="secondary">Send a message</ActionButton>
               <ActionButton onClick={handleShare} variant="secondary">Share</ActionButton>
             </div>
+            {listing.breederId ? <ActionButton className="w-full" to={`/breeders/${listing.breederId}`} variant="secondary">View breeder profile</ActionButton> : null}
             <ActionButton className="w-full bg-[#ff7bac] hover:bg-[#f4679d]" onClick={() => requireLoginOrRun(() => setShowReport(true))} variant="danger">Report this announce</ActionButton>
             {!currentUser ? <div className="rounded-xl border border-black bg-white p-3 text-center text-xs">Message and report actions require login. You will be returned here after signing in.</div> : null}
             {notice ? <p className="text-center text-sm font-semibold text-[#6c5ce7]">{notice}</p> : null}

@@ -76,7 +76,6 @@ function MainLayout({ children }) {
   const customerMenu = [
     { to: '/customer/profile', label: 'Profile' },
     { to: '/customer/saved', label: 'Announce liked' },
-    { to: '/customer/reviews', label: 'Review' },
     { to: '/customer/messages', label: 'Message' },
   ]
   const profileMenu = currentUser?.role === 'customer' ? customerMenu : navigation

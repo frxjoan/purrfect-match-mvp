@@ -57,15 +57,37 @@ class BreederProfile(db.Model):
         return self.is_verified()
 
     def to_dict(self):
+        owner_name = None
+        profile_picture_url = None
+        user = None
+
+        if self.user:
+            owner_name = " ".join(
+                value for value in [self.user.first_name, self.user.last_name]
+                if value
+            ) or None
+            profile_picture_url = self.user.profile_picture_url
+            user = {
+                "id": self.user.id,
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+                "display_name": owner_name,
+                "profile_picture_url": profile_picture_url,
+            }
+
         return {
             "id": self.id,
             "user_id": self.user_id,
             "business_name": self.business_name,
+            "display_name": self.business_name,
+            "owner_name": owner_name,
+            "profile_picture_url": profile_picture_url,
             "bio": self.bio,
             "location": self.location,
             "certification_status": self.certification_status,
             "certification_document_url": self.certification_document_url,
             "certification_admin_comment": self.certification_admin_comment,
+            "user": user,
             "verified_at": (
                 self.verified_at.isoformat()
                 if self.verified_at

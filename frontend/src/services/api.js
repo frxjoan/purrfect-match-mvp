@@ -76,10 +76,15 @@ function getBreederName(breeder) {
     return breeder
   }
 
-  return breeder.business_name
+  const ownerName = [breeder.first_name, breeder.last_name].filter(Boolean).join(' ')
+
+  return breeder.display_name
+    ?? breeder.business_name
     ?? breeder.cattery_name
     ?? breeder.name
-    ?? [breeder.first_name, breeder.last_name].filter(Boolean).join(' ')
+    ?? breeder.owner_name
+    ?? breeder.user?.display_name
+    ?? ownerName
     ?? ''
 }
 
@@ -87,12 +92,17 @@ export function normalizeListing(listing) {
   const title = listing.title ?? listing.name ?? ''
   const ageMonths = listing.age_months ?? listing.ageMonths
   const images = listing.images ?? []
+  const breederProfile = typeof listing.breeder === 'object' ? listing.breeder : null
 
   return {
     ...listing,
     age: listing.age ?? formatAge(ageMonths),
     ageMonths,
     breeder: getBreederName(listing.breeder),
+    breederId: listing.breeder_id ?? breederProfile?.id ?? null,
+    breederOwnerName: breederProfile?.owner_name ?? breederProfile?.user?.display_name ?? '',
+    breederPhoto: breederProfile?.profile_picture_url ?? breederProfile?.user?.profile_picture_url ?? null,
+    breederProfile,
     gender: normalizeGender(listing.gender),
     id: listing.id,
     image: listing.image ?? getPrimaryImage(images),
@@ -102,7 +112,7 @@ export function normalizeListing(listing) {
     status: normalizeStatus(listing.status),
     summary: listing.summary ?? listing.description ?? '',
     title,
-    verified: listing.verified ?? listing.breeder?.certification_status === 'verified',
+    verified: listing.verified ?? breederProfile?.certification_status === 'verified',
   }
 }
 
@@ -219,6 +229,11 @@ export async function fetchBreederProfile() {
   return getResponseData(response)
 }
 
+export async function fetchPublicBreederProfile(breederId) {
+  const response = await api.get(`/breeders/${breederId}`)
+  return getResponseData(response)
+}
+
 export async function updateBreederProfile(payload) {
   const response = await api.patch('/breeders/me', payload)
   return getResponseData(response)
@@ -239,6 +254,11 @@ export async function applyAsBreeder(payload) {
   }
 
   const response = await api.post('/breeders/apply', formData)
+  return getResponseData(response)
+}
+
+export async function fetchBreederReviews(breederId) {
+  const response = await api.get(`/breeders/${breederId}/reviews`)
   return getResponseData(response)
 }
 
