@@ -57,12 +57,12 @@ function AdminDashboardPage() {
   }, [currentUser?.token])
 
   const stats = useMemo(() => ([
-    { label: 'Total users', value: String(backendStats?.total_users ?? '-'), note: 'Backend users' },
+    { label: 'Total users', value: String(backendStats?.total_users ?? '-'), note: 'Users' },
     { label: 'Breeders', value: String(backendStats?.total_breeders ?? '-'), note: `${backendStats?.pending_certifications ?? '-'} pending review` },
     { label: 'Customers', value: String(backendStats?.total_customers ?? '-'), note: 'Registered customer accounts' },
-    { label: 'Active listings', value: String(backendStats?.active_listings ?? '-'), note: 'Public catalogue' },
+    { label: 'Active listings', value: String(backendStats?.active_listings ?? '-'), note: 'Listings' },
     { label: 'Open reports', value: String(backendStats?.pending_reports ?? '-'), note: 'Moderation follow-up' },
-    { label: 'Reviews', value: String(backendStats?.total_reviews ?? '-'), note: 'Backend reviews' },
+    { label: 'Reviews', value: String(backendStats?.total_reviews ?? '-'), note: 'Reviews' },
   ]), [backendStats])
 
   return (

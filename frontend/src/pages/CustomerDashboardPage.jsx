@@ -61,13 +61,13 @@ function CustomerDashboardPage() {
       <SectionHeader
         eyebrow="Customer dashboard"
         title="Your adoption search"
-        description="Saved listings, active conversations, and account readiness from the backend."
+        description="Saved listings, active conversations, and account readiness."
         actions={<ActionButton to="/customer/listings">Browse listings</ActionButton>}
       />
       <section className="grid gap-4 md:grid-cols-3">
         <StatCard label="Saved listings" value={String(savedListings.length)} note="Synced with your account" />
-        <StatCard label="Open messages" value={String(conversations.length)} note="Backend conversations" />
-        <StatCard label="Profile" value={profileComplete ? 'Ready' : 'Incomplete'} note="Backend account profile" />
+        <StatCard label="Open messages" value={String(conversations.length)} note="Conversations" />
+        <StatCard label="Profile" value={profileComplete ? 'Ready' : 'Incomplete'} note="Account profile" />
       </section>
       {isLoading ? <p className="text-sm font-semibold text-slate-500">Loading dashboard...</p> : null}
       {notice ? <p className="text-sm font-semibold text-[#c24b78]">{notice}</p> : null}

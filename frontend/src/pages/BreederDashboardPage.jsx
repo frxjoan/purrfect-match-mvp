@@ -64,7 +64,7 @@ function BreederDashboardPage() {
       <SectionHeader
         eyebrow="Breeder dashboard"
         title="Manage your cattery"
-        description="Verification, live listings, and buyer conversations from the backend."
+        description="Verification, live listings, and buyer conversations."
         actions={<ActionButton to="/breeder/certification">View certification</ActionButton>}
       />
       {!breederVerified ? (
@@ -73,9 +73,9 @@ function BreederDashboardPage() {
         </div>
       ) : null}
       <section className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Active listings" value={String(breederListings.length)} note="Backend listings" />
-        <StatCard label="Buyer inquiries" value={String(conversations.length)} note="Backend conversations" />
-        <StatCard label="Certification" value={breederVerified ? 'Verified' : 'In review'} note="Backend breeder profile" />
+        <StatCard label="Active listings" value={String(breederListings.length)} note="Listings" />
+        <StatCard label="Buyer inquiries" value={String(conversations.length)} note="Conversations" />
+        <StatCard label="Certification" value={breederVerified ? 'Verified' : 'In review'} note="Breeder profile" />
       </section>
       {isLoading ? <p className="text-sm font-semibold text-slate-500">Loading dashboard...</p> : null}
       {notice ? <p className="text-sm font-semibold text-[#c24b78]">{notice}</p> : null}
