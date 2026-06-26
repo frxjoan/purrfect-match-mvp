@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+﻿from datetime import datetime, timezone
 
 from ..extensions import db
 
@@ -62,6 +62,11 @@ class CatListing(db.Model):
         back_populates='listing',
         cascade='all, delete-orphan',
     )
+    saved_by = db.relationship(
+        'SavedListing',
+        back_populates='listing',
+        cascade='all, delete-orphan',
+    )
 
     def to_dict(self):
         return {
@@ -75,6 +80,7 @@ class CatListing(db.Model):
             "location": self.location,
             "description": self.description,
             "status": self.status,
+            "breeder": self.breeder.to_dict() if self.breeder else None,
             "images": [image.to_dict() for image in self.images],
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

@@ -63,7 +63,7 @@ function ReportListingModal({ listing, onClose }) {
       ) : (
         <form className="w-full max-w-xl rounded-lg border border-black bg-[#fbfbff] p-8 shadow-xl" onSubmit={handleSubmit}>
           <div className="mb-4 flex items-center gap-3">
-            <button className="text-3xl" onClick={onClose} type="button">←</button>
+            <button className="text-sm font-semibold" onClick={onClose} type="button">Back</button>
             <h2 className="text-2xl font-medium">Report announce</h2>
           </div>
           <label className="mx-auto mt-5 block max-w-xs">
@@ -75,10 +75,6 @@ function ReportListingModal({ listing, onClose }) {
           <label className="mx-auto mt-5 block max-w-xs">
             <span className="block text-sm">Please provide more information (optional)</span>
             <textarea className="mt-2 min-h-24 w-full rounded-lg border border-black bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => setDetails(event.target.value)} placeholder="Describe the issue..." value={details} />
-          </label>
-          <label className="mx-auto mt-5 block max-w-xs opacity-60">
-            <span className="block text-sm">Screenshot upload unavailable</span>
-            <div className="mt-2 flex h-20 items-center justify-center rounded-lg border border-dashed border-black bg-white text-xs">TODO: backend report screenshot endpoint needed</div>
           </label>
           {error ? <p className="mt-5 text-center text-sm font-semibold text-[#c24b78]">{error}</p> : null}
           <div className="mt-8 flex justify-center gap-4">

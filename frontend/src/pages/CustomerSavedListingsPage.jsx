@@ -4,19 +4,8 @@ import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
 import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
 import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
-import { listings as demoListings } from '../data/mockData.js'
 import useAuth from '../hooks/useAuth.js'
-import { fetchListings } from '../services/api.js'
-
-const SAVED_LISTINGS_KEY = 'purrfect-match-saved-listings'
-
-function getSavedListingIds() {
-  try {
-    return JSON.parse(window.localStorage.getItem(SAVED_LISTINGS_KEY)) ?? []
-  } catch {
-    return []
-  }
-}
+import { fetchSavedListings, unsaveListing } from '../services/api.js'
 
 function CustomerSavedListingsPage() {
   const { currentUser } = useAuth()
@@ -27,31 +16,28 @@ function CustomerSavedListingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [reportListing, setReportListing] = useState(null)
-  const [savedListingIds, setSavedListingIds] = useState(getSavedListingIds)
+  const [savedListingIds, setSavedListingIds] = useState([])
 
   useEffect(() => {
     let isActive = true
 
-    async function loadListings() {
+    async function loadSavedListings() {
       setIsLoading(true)
       setLoadError('')
 
       try {
-        const result = await fetchListings()
+        const result = await fetchSavedListings()
 
-        if (!isActive) {
-          return
+        if (isActive) {
+          setListings(result.listings)
+          setSavedListingIds(result.savedListingIds)
         }
-
-        setListings(result.listings)
-      } catch {
-        if (!isActive) {
-          return
+      } catch (error) {
+        if (isActive) {
+          setListings([])
+          setSavedListingIds([])
+          setLoadError(error.response?.data?.error?.message ?? 'Saved listings could not be loaded from the backend.')
         }
-
-        // TODO: Remove demo fallback once saved listings have a backend endpoint.
-        setListings(demoListings)
-        setLoadError('Backend listings are unavailable, so demo liked announcements are shown temporarily.')
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -59,7 +45,7 @@ function CustomerSavedListingsPage() {
       }
     }
 
-    loadListings()
+    loadSavedListings()
 
     return () => {
       isActive = false
@@ -68,23 +54,25 @@ function CustomerSavedListingsPage() {
 
   const savedListings = useMemo(
     () => listings.filter((listing) => {
-      const haystack = `${listing.name} ${listing.breed} ${listing.location}`.toLowerCase()
-      return savedListingIds.map(String).includes(String(listing.id)) && haystack.includes(query.toLowerCase())
+      const haystack = `${listing.name} ${listing.title} ${listing.breed} ${listing.location}`.toLowerCase()
+      return haystack.includes(query.toLowerCase())
     }),
-    [listings, query, savedListingIds],
+    [listings, query],
   )
 
-  function removeSavedListing(listingId) {
-    setSavedListingIds((currentIds) => {
-      const nextIds = currentIds.map(String).filter((id) => id !== String(listingId))
-      // TODO: Remove saved listing through customer API when backend persistence exists.
-      window.localStorage.setItem(SAVED_LISTINGS_KEY, JSON.stringify(nextIds))
-      return nextIds
-    })
+  async function removeSavedListing(listingId) {
+    try {
+      const result = await unsaveListing(listingId)
+      setListings(result.listings)
+      setSavedListingIds(result.savedListingIds)
+      setLoadError('')
+    } catch (error) {
+      setLoadError(error.response?.data?.error?.message ?? 'Saved listing could not be removed.')
+    }
   }
 
   function handleReport(listing) {
-    if (!currentUser) {
+    if (!currentUser?.token) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }

@@ -390,6 +390,55 @@ def delete_listing_as_admin(listing_id):
         },
     }), 200
 
+@admin_bp.get("/users")
+@jwt_required()
+def list_admin_users():
+    admin = get_current_admin()
+    if not admin:
+        return admin_required_response()
+
+    role = request.args.get("role")
+    status = request.args.get("status")
+    search = request.args.get("search")
+
+    query = User.query
+
+    if role:
+        if role not in ["customer", "breeder", "admin"]:
+            return jsonify({
+                "success": False,
+                "error": {"message": "Invalid user role."},
+            }), 400
+        query = query.filter(User.role == role)
+
+    if status:
+        if status not in ["active", "suspended", "banned"]:
+            return jsonify({
+                "success": False,
+                "error": {"message": "Invalid user status."},
+            }), 400
+        query = query.filter(User.status == status)
+
+    if search:
+        pattern = f"%{search.strip()}%"
+        query = query.filter(
+            or_(
+                User.email.ilike(pattern),
+                User.first_name.ilike(pattern),
+                User.last_name.ilike(pattern),
+            )
+        )
+
+    users = query.order_by(User.created_at.desc()).all()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "count": len(users),
+            "users": [user.to_dict() for user in users],
+        },
+    }), 200
+
 @admin_bp.post("/users/<int:user_id>/restrictions")
 @jwt_required()
 def restrict_user(user_id):

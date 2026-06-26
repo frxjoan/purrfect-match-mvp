@@ -1,22 +1,23 @@
-﻿import axios from 'axios'
+import axios from 'axios'
+
+const AUTH_STORAGE_KEY = 'purrfect-match-user'
+const LEGACY_AUTH_STORAGE_KEY = 'purrfect-match-demo-user'
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   timeout: 10000,
 })
 
-// TODO: Keep all future Flask API calls in this module or small service modules that import this client.
-
 api.interceptors.request.use((config) => {
   try {
-    const storedUser = window.localStorage.getItem('purrfect-match-demo-user')
+    const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY)
     const currentUser = storedUser ? JSON.parse(storedUser) : null
 
     if (currentUser?.token) {
       config.headers.Authorization = `Bearer ${currentUser.token}`
     }
   } catch {
-    // Ignore malformed demo session storage and continue unauthenticated.
+    // Ignore malformed session storage and continue unauthenticated.
   }
 
   return config
@@ -27,8 +28,8 @@ function getResponseData(response) {
 }
 
 function formatAge(ageMonths) {
-  if (ageMonths === null || ageMonths === undefined) {
-    return 'Age not listed'
+  if (ageMonths === null || ageMonths === undefined || ageMonths === '') {
+    return ''
   }
 
   if (ageMonths < 12) {
@@ -47,12 +48,12 @@ function formatAge(ageMonths) {
 
 function getPrimaryImage(images = []) {
   const mainImage = images.find((image) => image.is_main) ?? images[0]
-  return mainImage?.image_url ?? 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&w=900&q=80'
+  return mainImage?.image_url ?? null
 }
 
 function normalizeStatus(status) {
   if (!status) {
-    return 'Available'
+    return ''
   }
 
   return status.charAt(0).toUpperCase() + status.slice(1)
@@ -66,25 +67,52 @@ function normalizeGender(gender) {
   return gender.charAt(0).toUpperCase() + gender.slice(1)
 }
 
+function getBreederName(breeder) {
+  if (!breeder) {
+    return ''
+  }
+
+  if (typeof breeder === 'string') {
+    return breeder
+  }
+
+  return breeder.business_name
+    ?? breeder.cattery_name
+    ?? breeder.name
+    ?? [breeder.first_name, breeder.last_name].filter(Boolean).join(' ')
+    ?? ''
+}
+
 export function normalizeListing(listing) {
-  const title = listing.title ?? listing.name ?? 'Cat announcement'
+  const title = listing.title ?? listing.name ?? ''
   const ageMonths = listing.age_months ?? listing.ageMonths
+  const images = listing.images ?? []
 
   return {
     ...listing,
     age: listing.age ?? formatAge(ageMonths),
     ageMonths,
-    breeder: listing.breeder?.cattery_name ?? listing.breeder?.name ?? listing.breeder ?? 'Verified breeder',
+    breeder: getBreederName(listing.breeder),
     gender: normalizeGender(listing.gender),
     id: listing.id,
-    image: listing.image ?? getPrimaryImage(listing.images),
-    images: listing.images ?? [],
+    image: listing.image ?? getPrimaryImage(images),
+    images,
     name: listing.name ?? title,
     price: Number(listing.price ?? 0),
     status: normalizeStatus(listing.status),
-    summary: listing.summary ?? listing.description ?? 'Details from the breeder will appear here.',
+    summary: listing.summary ?? listing.description ?? '',
     title,
-    verified: listing.verified ?? false,
+    verified: listing.verified ?? listing.breeder?.certification_status === 'verified',
+  }
+}
+
+function normalizeSavedListings(data) {
+  const listings = data?.listings ?? []
+
+  return {
+    count: data?.count ?? listings.length,
+    listings: listings.map(normalizeListing),
+    savedListingIds: (data?.saved_listing_ids ?? []).map(String),
   }
 }
 
@@ -102,6 +130,21 @@ export async function fetchListings(params = {}) {
 export async function fetchListingById(listingId) {
   const response = await api.get(`/listings/${listingId}`)
   return normalizeListing(getResponseData(response))
+}
+
+export async function fetchSavedListings() {
+  const response = await api.get('/users/me/saved-listings')
+  return normalizeSavedListings(getResponseData(response))
+}
+
+export async function saveListing(listingId) {
+  const response = await api.post('/users/me/saved-listings', { listing_id: listingId })
+  return normalizeSavedListings(getResponseData(response))
+}
+
+export async function unsaveListing(listingId) {
+  const response = await api.delete(`/users/me/saved-listings/${listingId}`)
+  return normalizeSavedListings(getResponseData(response))
 }
 
 export async function loginUser(credentials) {
@@ -123,7 +166,7 @@ export async function createListing(payload) {
     }
   })
 
-  payload.images.forEach((image) => {
+  ;(payload.images ?? []).forEach((image) => {
     formData.append('images', image)
   })
 
@@ -141,6 +184,21 @@ export async function fetchAdminStats() {
   return getResponseData(response)
 }
 
+export async function fetchAdminUsers(params = {}) {
+  const response = await api.get('/admin/users', { params })
+  return getResponseData(response)
+}
+
+export async function restrictAdminUser(userId, payload) {
+  const response = await api.post(`/admin/users/${userId}/restrictions`, payload)
+  return getResponseData(response)
+}
+
+export async function liftAdminUserRestriction(userId) {
+  const response = await api.delete(`/admin/users/${userId}/restrictions`)
+  return getResponseData(response)
+}
+
 export async function deleteAdminListing(listingId) {
   const response = await api.delete(`/admin/listings/${listingId}`)
   return getResponseData(response)
@@ -153,6 +211,39 @@ export async function fetchCurrentUserProfile() {
 
 export async function updateCurrentUserProfile(payload) {
   const response = await api.patch('/users/me', payload)
+  return getResponseData(response)
+}
+
+export async function fetchBreederProfile() {
+  const response = await api.get('/breeders/me')
+  return getResponseData(response)
+}
+
+export async function updateBreederProfile(payload) {
+  const response = await api.patch('/breeders/me', payload)
+  return getResponseData(response)
+}
+
+export async function applyAsBreeder(payload) {
+  const formData = new FormData()
+
+  formData.append('business_name', payload.business_name)
+  formData.append('location', payload.location)
+
+  if (payload.bio) {
+    formData.append('bio', payload.bio)
+  }
+
+  if (payload.certification_document) {
+    formData.append('certification_document', payload.certification_document)
+  }
+
+  const response = await api.post('/breeders/apply', formData)
+  return getResponseData(response)
+}
+
+export async function createBreederReview(breederId, payload) {
+  const response = await api.post(`/breeders/${breederId}/reviews`, payload)
   return getResponseData(response)
 }
 
@@ -207,6 +298,3 @@ export async function rejectAdminCertification(breederId, payload) {
 }
 
 export default api
-
-
-

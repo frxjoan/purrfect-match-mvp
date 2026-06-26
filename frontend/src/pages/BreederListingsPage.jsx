@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
-import { createListing, deleteListing, fetchListings } from '../services/api.js'
+import { createListing, deleteListing, fetchBreederProfile, fetchListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
 
 const emptyListingForm = {
@@ -21,7 +21,8 @@ function getErrorMessage(error, fallback) {
 
 function BreederListingsPage() {
   const { currentUser } = useAuth()
-  const breederVerified = currentUser?.breederVerificationStatus === 'verified' || currentUser?.role === 'admin'
+  const [breederProfile, setBreederProfile] = useState(currentUser?.breeder_profile ?? null)
+  const breederVerified = breederProfile?.certification_status === 'verified' || currentUser?.role === 'admin'
   const [listingForm, setListingForm] = useState(emptyListingForm)
   const [listings, setListings] = useState([])
   const [loadingListings, setLoadingListings] = useState(true)
@@ -33,15 +34,22 @@ function BreederListingsPage() {
     let ignore = false
 
     async function loadListings() {
+      setLoadingListings(true)
       try {
-        const result = await fetchListings()
+        const [profileData, listingData] = await Promise.all([
+          fetchBreederProfile(),
+          fetchListings(),
+        ])
+        const profile = profileData.breeder_profile
         if (!ignore) {
-          setListings(result.listings)
+          setBreederProfile(profile)
+          setListings(listingData.listings.filter((listing) => Number(listing.breeder_id) === Number(profile.id)))
           setNotice('')
         }
       } catch (error) {
         if (!ignore) {
-          setNotice(getErrorMessage(error, 'Backend listings are unavailable.'))
+          setListings([])
+          setNotice(getErrorMessage(error, 'Breeder listings are unavailable.'))
         }
       } finally {
         if (!ignore) {
@@ -88,7 +96,7 @@ function BreederListingsPage() {
     try {
       const createdListing = await createListing(listingForm)
       setListings((currentListings) => [createdListing, ...currentListings])
-      setNotice('Listing created in the backend database.')
+      setNotice('Listing created.')
       resetForm()
     } catch (error) {
       setNotice(getErrorMessage(error, 'Listing creation failed.'))
@@ -126,21 +134,21 @@ function BreederListingsPage() {
       <SectionHeader
         eyebrow="Breeder listings"
         title="Manage listings"
-        description="Create listings through the backend API with images stored on the listing record."
+        description="Create and manage listings for your breeder profile."
       />
       <section className="grid gap-5 lg:grid-cols-[1fr_1fr]">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-950">Current backend listings</h2>
+          <h2 className="text-xl font-bold text-slate-950">Current listings</h2>
           <div className="mt-5 space-y-4">
             {loadingListings ? <p className="text-sm text-slate-500">Loading listings...</p> : null}
-            {!loadingListings && listings.length === 0 ? <p className="text-sm text-slate-500">No backend listings yet.</p> : null}
+            {!loadingListings && listings.length === 0 ? <p className="text-sm text-slate-500">No listings yet.</p> : null}
             {listings.map((listing) => (
               <article key={listing.id} className="rounded-lg border border-slate-200 p-4">
                 {listing.image ? <img alt="" className="mb-4 h-32 w-full rounded-lg object-cover" src={listing.image} /> : null}
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="font-semibold text-slate-950">{listing.title}</p>
-                    <p className="mt-1 text-sm text-slate-500">{listing.status} - ${Number(listing.price || 0).toLocaleString()}</p>
+                    <p className="mt-1 text-sm text-slate-500">{listing.status} - {Number(listing.price || 0).toLocaleString()} EUR</p>
                     <p className="mt-1 text-sm text-slate-500">{listing.breed} - {listing.location}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">

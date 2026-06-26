@@ -4,19 +4,8 @@ import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
 import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
 import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
-import { listings as demoListings } from '../data/mockData.js'
 import useAuth from '../hooks/useAuth.js'
-import { fetchListings } from '../services/api.js'
-
-const SAVED_LISTINGS_KEY = 'purrfect-match-saved-listings'
-
-function getSavedListingIds() {
-  try {
-    return JSON.parse(window.localStorage.getItem(SAVED_LISTINGS_KEY)) ?? []
-  } catch {
-    return []
-  }
-}
+import { fetchListings, fetchSavedListings, saveListing, unsaveListing } from '../services/api.js'
 
 function HomePage() {
   const { currentUser } = useAuth()
@@ -24,11 +13,11 @@ function HomePage() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [listings, setListings] = useState([])
-  const [isFallbackDemo, setIsFallbackDemo] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [reportListing, setReportListing] = useState(null)
-  const [savedListingIds, setSavedListingIds] = useState(getSavedListingIds)
+  const [savedListingIds, setSavedListingIds] = useState([])
+  const [saveError, setSaveError] = useState('')
 
   useEffect(() => {
     let isActive = true
@@ -40,21 +29,14 @@ function HomePage() {
       try {
         const result = await fetchListings({ status: 'available' })
 
-        if (!isActive) {
-          return
+        if (isActive) {
+          setListings(result.listings)
         }
-
-        setListings(result.listings)
-        setIsFallbackDemo(false)
-      } catch {
-        if (!isActive) {
-          return
+      } catch (error) {
+        if (isActive) {
+          setListings([])
+          setLoadError(error.response?.data?.error?.message ?? 'Listings could not be loaded from the backend.')
         }
-
-        // TODO: Remove demo fallback once the hosted Flask API is always available in demo environments.
-        setListings(demoListings)
-        setIsFallbackDemo(true)
-        setLoadError('Backend listings are unavailable, so demo announcements are shown temporarily.')
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -69,15 +51,43 @@ function HomePage() {
     }
   }, [])
 
+  useEffect(() => {
+    let isActive = true
+
+    async function loadSavedListings() {
+      if (!currentUser?.token) {
+        setSavedListingIds([])
+        return
+      }
+
+      try {
+        const result = await fetchSavedListings()
+        if (isActive) {
+          setSavedListingIds(result.savedListingIds)
+        }
+      } catch {
+        if (isActive) {
+          setSavedListingIds([])
+        }
+      }
+    }
+
+    loadSavedListings()
+
+    return () => {
+      isActive = false
+    }
+  }, [currentUser?.token])
+
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
-      const haystack = `${listing.name} ${listing.breed} ${listing.location}`.toLowerCase()
+      const haystack = `${listing.name} ${listing.title} ${listing.breed} ${listing.location}`.toLowerCase()
       return haystack.includes(query.toLowerCase())
     })
   }, [listings, query])
 
   function requireLoginOrRun(action) {
-    if (!currentUser) {
+    if (!currentUser?.token) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }
@@ -86,18 +96,15 @@ function HomePage() {
   }
 
   function toggleSavedListing(listingId) {
-    requireLoginOrRun(() => {
-      setSavedListingIds((currentIds) => {
-        const normalizedListingId = String(listingId)
-        const normalizedCurrentIds = currentIds.map(String)
-        const nextIds = normalizedCurrentIds.includes(normalizedListingId)
-          ? normalizedCurrentIds.filter((id) => id !== normalizedListingId)
-          : [...normalizedCurrentIds, normalizedListingId]
-
-        // TODO: Persist saved listings through the customer saved-listings API when it exists.
-        window.localStorage.setItem(SAVED_LISTINGS_KEY, JSON.stringify(nextIds))
-        return nextIds
-      })
+    requireLoginOrRun(async () => {
+      setSaveError('')
+      try {
+        const isSaved = savedListingIds.map(String).includes(String(listingId))
+        const result = isSaved ? await unsaveListing(listingId) : await saveListing(listingId)
+        setSavedListingIds(result.savedListingIds)
+      } catch (error) {
+        setSaveError(error.response?.data?.error?.message ?? 'Saved listings could not be updated.')
+      }
     })
   }
 
@@ -114,6 +121,11 @@ function HomePage() {
             {loadError}
           </div>
         ) : null}
+        {saveError ? (
+          <div className="rounded-xl border border-black bg-white p-3 text-center text-xs text-[#c24b78]">
+            {saveError}
+          </div>
+        ) : null}
         {isLoading ? (
           <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
             Loading announcements...
@@ -128,7 +140,7 @@ function HomePage() {
         )}
         {!isLoading && filteredListings.length === 0 ? (
           <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
-            {isFallbackDemo ? 'No demo announcements match this search.' : 'No announcements match this search.'}
+            No announcements match this search.
           </div>
         ) : null}
       </div>

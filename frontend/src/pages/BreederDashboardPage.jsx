@@ -1,30 +1,70 @@
+﻿import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
-import { breederListings, breederThreads } from '../data/mockData.js'
 import useAuth from '../hooks/useAuth.js'
-
-const BREEDER_LISTINGS_KEY = 'purrfect-match-breeder-listings'
-
-function getStoredListings() {
-  try {
-    return JSON.parse(window.localStorage.getItem(BREEDER_LISTINGS_KEY)) ?? breederListings
-  } catch {
-    return breederListings
-  }
-}
+import { fetchBreederProfile, fetchConversations, fetchListings } from '../services/api.js'
 
 function BreederDashboardPage() {
   const { currentUser } = useAuth()
-  const breederVerified = currentUser?.breederVerificationStatus === 'verified' || currentUser?.role === 'admin'
-  const listings = getStoredListings()
+  const [breederProfile, setBreederProfile] = useState(currentUser?.breeder_profile ?? null)
+  const [conversations, setConversations] = useState([])
+  const [listings, setListings] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadDashboard() {
+      setIsLoading(true)
+      setNotice('')
+
+      try {
+        const [profileData, listingData, conversationData] = await Promise.all([
+          fetchBreederProfile(),
+          fetchListings(),
+          fetchConversations(),
+        ])
+
+        if (!ignore) {
+          setBreederProfile(profileData.breeder_profile)
+          setListings(listingData.listings)
+          setConversations(conversationData.conversations ?? [])
+        }
+      } catch (error) {
+        if (!ignore) {
+          setNotice(error.response?.data?.error?.message ?? 'Breeder dashboard data could not be loaded.')
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadDashboard()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
+  const breederListings = useMemo(() => {
+    if (!breederProfile?.id) {
+      return []
+    }
+
+    return listings.filter((listing) => Number(listing.breeder_id) === Number(breederProfile.id))
+  }, [breederProfile?.id, listings])
+  const breederVerified = breederProfile?.certification_status === 'verified' || currentUser?.role === 'admin'
 
   return (
     <>
       <SectionHeader
         eyebrow="Breeder dashboard"
         title="Manage your cattery"
-        description="Track verification, listing readiness, and buyer conversations from one working surface."
+        description="Verification, live listings, and buyer conversations from the backend."
         actions={<ActionButton to="/breeder/certification">View certification</ActionButton>}
       />
       {!breederVerified ? (
@@ -33,32 +73,35 @@ function BreederDashboardPage() {
         </div>
       ) : null}
       <section className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Active listings" value={String(listings.length)} note="Stored locally for this demo" />
-        <StatCard label="Buyer inquiries" value="12" note="Two need a response" />
-        <StatCard label="Certification" value={breederVerified ? 'Verified' : 'In review'} note="Demo auth verification state" />
+        <StatCard label="Active listings" value={String(breederListings.length)} note="Backend listings" />
+        <StatCard label="Buyer inquiries" value={String(conversations.length)} note="Backend conversations" />
+        <StatCard label="Certification" value={breederVerified ? 'Verified' : 'In review'} note="Backend breeder profile" />
       </section>
+      {isLoading ? <p className="text-sm font-semibold text-slate-500">Loading dashboard...</p> : null}
+      {notice ? <p className="text-sm font-semibold text-[#c24b78]">{notice}</p> : null}
       <section className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Listing management</h2>
           <div className="mt-5 space-y-4">
-            {listings.map((listing) => (
+            {breederListings.length ? breederListings.map((listing) => (
               <div key={listing.id} className="rounded-lg border border-slate-200 p-4">
                 <p className="font-semibold text-slate-950">{listing.title}</p>
-                <p className="mt-1 text-sm text-slate-500">{listing.status} · {listing.inquiries} inquiries · {listing.price}</p>
+                <p className="mt-1 text-sm text-slate-500">{listing.status} - {listing.price.toLocaleString()} EUR</p>
+                <p className="mt-1 text-sm text-slate-500">{listing.breed} - {listing.location}</p>
               </div>
-            ))}
+            )) : <p className="text-sm text-slate-500">No listings for this breeder yet.</p>}
           </div>
           <ActionButton className="mt-5" to="/breeder/listings" variant="secondary">Open listings</ActionButton>
         </div>
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Recent conversations</h2>
           <div className="mt-5 space-y-4">
-            {breederThreads.map((thread) => (
-              <div key={thread.id} className="rounded-lg bg-slate-50 p-4">
-                <p className="font-semibold text-slate-950">{thread.subject}</p>
-                <p className="mt-1 text-sm text-slate-500">{thread.from} · {thread.status}</p>
+            {conversations.length ? conversations.slice(0, 3).map((conversation) => (
+              <div key={conversation.id} className="rounded-lg bg-slate-50 p-4">
+                <p className="font-semibold text-slate-950">{conversation.listing_title ?? `Conversation #${conversation.id}`}</p>
+                <p className="mt-1 text-sm text-slate-500">Listing #{conversation.listing_id}</p>
               </div>
-            ))}
+            )) : <p className="text-sm text-slate-500">No conversations yet.</p>}
           </div>
           <ActionButton className="mt-5" to="/breeder/messages" variant="secondary">Open messages</ActionButton>
         </div>

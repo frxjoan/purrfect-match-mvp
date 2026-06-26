@@ -1,55 +1,66 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import { createBreederReview } from '../services/api.js'
 
 function CustomerReviewsPage() {
   const navigate = useNavigate()
-  const [review, setReview] = useState('')
-  const [submitted, setSubmitted] = useState(false)
+  const [breederId, setBreederId] = useState('')
+  const [comment, setComment] = useState('')
+  const [rating, setRating] = useState('5')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [notice, setNotice] = useState('')
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    // TODO: Submit customer reviews through breeder review endpoints once backend contract is connected.
-    setSubmitted(true)
-    setReview('')
+    setIsSubmitting(true)
+    setNotice('')
+
+    try {
+      await createBreederReview(breederId, {
+        comment: comment.trim() || undefined,
+        rating: Number(rating),
+      })
+      setNotice('Review submitted.')
+      setBreederId('')
+      setComment('')
+      setRating('5')
+    } catch (error) {
+      setNotice(error.response?.data?.error?.message ?? 'Review could not be submitted.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
-    <section className="mx-auto grid w-full max-w-5xl overflow-hidden rounded-xl border border-black bg-[#fbfbff] md:grid-cols-[0.85fr_1.15fr]">
-      <aside className="border-b border-black p-6 md:border-b-0 md:border-r">
-        <button className="mb-8 text-3xl" onClick={() => navigate(-1)} type="button">←</button>
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative flex h-28 w-28 items-center justify-center rounded-full border-2 border-[#c9bfff] bg-[#f8f7fb] text-5xl text-[#8b7cff]">
-            ♡
-            <span className="absolute bottom-1 right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#ff7bac] text-sm text-white">◎</span>
-          </div>
-          <div className="w-full max-w-xs text-sm leading-7">
-            <p>Charlotte83</p>
-            <p>Le Var</p>
-            <p>Bio</p>
-            <p className="mt-3 rounded-xl border border-black bg-white p-3">Éleveuse de chat depuis 2 ans dans le var</p>
-          </div>
+    <section className="mx-auto w-full max-w-3xl rounded-xl border border-black bg-[#fbfbff] p-6">
+      <button className="mb-6 text-sm font-semibold" onClick={() => navigate(-1)} type="button">Back</button>
+      <form className="grid gap-5" onSubmit={handleSubmit}>
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-950">Review a breeder</h1>
+          <p className="mt-2 text-sm text-slate-600">Submit a review to the backend breeder review endpoint.</p>
         </div>
-      </aside>
-      <form className="flex min-h-96 flex-col items-center justify-center gap-8 p-6" onSubmit={handleSubmit}>
-        <div className="flex items-center gap-3 self-start md:ml-12">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#c9bfff] text-[#8b7cff]">♡</span>
-          <div>
-            <p className="text-sm font-semibold">Customer59</p>
-            <p className="rounded-full border border-black bg-white px-4 py-1 text-sm">Très chaleureuse</p>
-          </div>
-        </div>
-        <label className="w-full max-w-sm">
-          <span className="sr-only">Write your review</span>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Breeder ID</span>
+          <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" min="1" onChange={(event) => setBreederId(event.target.value)} type="number" value={breederId} />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Rating</span>
+          <select className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => setRating(event.target.value)} value={rating}>
+            {[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{value}</option>)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-slate-700">Comment</span>
           <textarea
-            className="min-h-16 w-full rounded-xl border border-black bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#c9bfff]"
-            onChange={(event) => setReview(event.target.value)}
+            className="mt-2 min-h-28 w-full rounded-xl border border-black bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#c9bfff]"
+            onChange={(event) => setComment(event.target.value)}
             placeholder="Write your review..."
-            value={review}
+            value={comment}
           />
         </label>
-        <ActionButton disabled={!review.trim()} type="submit">Review</ActionButton>
-        {submitted ? <p className="text-sm font-semibold text-[#6c5ce7]">Review saved locally as a placeholder.</p> : null}
+        <ActionButton disabled={isSubmitting || !breederId} type="submit">{isSubmitting ? 'Submitting...' : 'Submit review'}</ActionButton>
+        {notice ? <p className="text-sm font-semibold text-[#6c5ce7]">{notice}</p> : null}
       </form>
     </section>
   )

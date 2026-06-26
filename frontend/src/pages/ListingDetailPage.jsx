@@ -1,8 +1,7 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
-import { listings as demoListings } from '../data/mockData.js'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListingById, startConversation } from '../services/api.js'
 
@@ -12,7 +11,7 @@ function ListingDetailPage() {
   const navigate = useNavigate()
   const { listingId } = useParams()
   const [listing, setListing] = useState(null)
-  const [isFallbackDemo, setIsFallbackDemo] = useState(false)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [showReport, setShowReport] = useState(false)
@@ -24,30 +23,19 @@ function ListingDetailPage() {
     async function loadListing() {
       setIsLoading(true)
       setLoadError('')
-      setIsFallbackDemo(false)
+      setActiveImageIndex(0)
 
       try {
         const result = await fetchListingById(listingId)
 
-        if (!isActive) {
-          return
+        if (isActive) {
+          setListing(result)
         }
-
-        setListing(result)
-      } catch {
-        if (!isActive) {
-          return
+      } catch (error) {
+        if (isActive) {
+          setListing(null)
+          setLoadError(error.response?.data?.error?.message ?? 'Listing details could not be loaded from the backend.')
         }
-
-        const fallbackListing = demoListings.find((item) => String(item.id) === String(listingId)) ?? null
-
-        setListing(fallbackListing)
-        setIsFallbackDemo(Boolean(fallbackListing))
-        setLoadError(
-          fallbackListing
-            ? 'Backend listing details are unavailable, so a demo announcement is shown temporarily.'
-            : 'Listing details could not be loaded from the backend.',
-        )
       } finally {
         if (isActive) {
           setIsLoading(false)
@@ -62,8 +50,17 @@ function ListingDetailPage() {
     }
   }, [listingId])
 
+  const listingImages = useMemo(() => {
+    if (!listing) {
+      return []
+    }
+
+    const imageUrls = listing.images.map((image) => image.image_url).filter(Boolean)
+    return imageUrls.length ? imageUrls : [listing.image].filter(Boolean)
+  }, [listing])
+
   function requireLoginOrRun(action) {
-    if (!currentUser) {
+    if (!currentUser?.token) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }
@@ -73,7 +70,7 @@ function ListingDetailPage() {
 
   async function handleStartConversation() {
     if (!currentUser?.token) {
-      setNotice('Sign in with a backend account to start a conversation.')
+      navigate('/login', { state: { from: location.pathname } })
       return
     }
 
@@ -88,6 +85,14 @@ function ListingDetailPage() {
   function handleShare() {
     navigator.clipboard?.writeText(window.location.href)
     setNotice('Listing link copied.')
+  }
+
+  function showPreviousImage() {
+    setActiveImageIndex((currentIndex) => Math.max(0, currentIndex - 1))
+  }
+
+  function showNextImage() {
+    setActiveImageIndex((currentIndex) => Math.min(listingImages.length - 1, currentIndex + 1))
   }
 
   if (isLoading) {
@@ -107,35 +112,45 @@ function ListingDetailPage() {
     )
   }
 
+  const activeImage = listingImages[activeImageIndex]
+
   return (
     <>
       <section className="mx-auto w-full max-w-5xl rounded-xl border border-black bg-[#fbfbff] p-5">
-        <button className="mb-2 text-3xl" onClick={() => navigate(-1)} type="button">←</button>
+        <button className="mb-2 text-sm font-semibold" onClick={() => navigate(-1)} type="button">Back</button>
         {loadError ? <div className="mb-4 rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">{loadError}</div> : null}
         <div className="rounded-xl border border-black bg-white p-4">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
-            <button className="text-4xl text-slate-900" onClick={() => setNotice('Previous image unavailable.')} type="button">←</button>
-            <img alt={`${listing.name} the ${listing.breed}`} className="mx-auto h-40 w-full max-w-xs object-cover" src={listing.image} />
-            <button className="text-4xl text-slate-900" onClick={() => setNotice('Next image unavailable.')} type="button">→</button>
+            <button className="text-3xl text-slate-900 disabled:opacity-30" disabled={activeImageIndex === 0} onClick={showPreviousImage} type="button">&lt;</button>
+            {activeImage ? (
+              <img alt={`${listing.name} ${listing.breed}`} className="mx-auto h-56 w-full max-w-lg rounded-lg object-cover" src={activeImage} />
+            ) : (
+              <div className="mx-auto flex h-56 w-full max-w-lg items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500">
+                No photo available
+              </div>
+            )}
+            <button className="text-3xl text-slate-900 disabled:opacity-30" disabled={activeImageIndex >= listingImages.length - 1} onClick={showNextImage} type="button">&gt;</button>
           </div>
-          <p className="mt-1 text-right text-xs text-slate-600">2/5</p>
+          {listingImages.length ? <p className="mt-2 text-right text-xs text-slate-600">{activeImageIndex + 1}/{listingImages.length}</p> : null}
         </div>
         <div className="mt-4 grid gap-6 md:grid-cols-[0.85fr_1.15fr]">
           <aside className="space-y-3 text-sm">
             <div>
-              <h1 className="text-base font-semibold">{listing.name} {listing.breed}</h1>
-              <p>by {listing.breeder}</p>
-              <p className="text-yellow-500">★★★★★ <span className="text-slate-700">Reviews</span></p>
+              <h1 className="text-base font-semibold">{listing.name || listing.title}</h1>
+              {listing.breeder ? <p>by {listing.breeder}</p> : null}
             </div>
             <div className="rounded-xl border border-black bg-white p-3">
+              <p>{listing.breed}</p>
               <p>{listing.location}</p>
-              <p>{listing.age}</p>
-              <p className="mt-2 font-semibold">{listing.price.toLocaleString()} €</p>
+              {listing.age ? <p>{listing.age}</p> : null}
+              <p className="mt-2 font-semibold">{listing.price.toLocaleString()} EUR</p>
             </div>
-            <div>
-              <p className="font-semibold">Description</p>
-              <p className="mt-1 rounded-xl border border-black bg-white p-3 text-xs leading-5">{listing.summary}</p>
-            </div>
+            {listing.summary ? (
+              <div>
+                <p className="font-semibold">Description</p>
+                <p className="mt-1 rounded-xl border border-black bg-white p-3 text-xs leading-5">{listing.summary}</p>
+              </div>
+            ) : null}
           </aside>
           <section className="flex flex-col justify-center gap-5">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -145,7 +160,6 @@ function ListingDetailPage() {
             <ActionButton className="w-full bg-[#ff7bac] hover:bg-[#f4679d]" onClick={() => requireLoginOrRun(() => setShowReport(true))} variant="danger">Report this announce</ActionButton>
             {!currentUser ? <div className="rounded-xl border border-black bg-white p-3 text-center text-xs">Message and report actions require login. You will be returned here after signing in.</div> : null}
             {notice ? <p className="text-center text-sm font-semibold text-[#6c5ce7]">{notice}</p> : null}
-            {isFallbackDemo ? <p className="text-center text-xs text-slate-500">Demo fallback data is active for this announcement.</p> : null}
           </section>
         </div>
       </section>

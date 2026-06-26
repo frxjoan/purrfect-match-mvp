@@ -30,8 +30,6 @@ function ProtectedRoute({ allowedRole = 'customer', children }) {
       />
     )
   }
-
-  // TODO: Replace demo role checks with backend-backed auth once /api/v1/auth/me is wired.
   return children
 }
 
