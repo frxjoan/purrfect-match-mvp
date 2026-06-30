@@ -142,6 +142,80 @@ npm install
 npm run dev
 ```
 
+## How The Project Works
+
+Purrfect Match runs as a classic full-stack marketplace: the React frontend renders the user experience, the Flask backend exposes the REST API, PostgreSQL stores the structured application data, and Cloudinary stores uploaded listing images and breeder certification documents.
+
+### Mermaid Diagram
+
+```mermaid
+flowchart LR
+    subgraph Users["User roles"]
+        Visitor["Public visitor"]
+        Customer["Customer"]
+        Breeder["Breeder"]
+        Admin["Admin"]
+    end
+
+    subgraph Frontend["Frontend - React + Vite"]
+        PublicPages["Public pages"]
+        ProtectedPages["Role-based pages"]
+        AuthContext["Auth context"]
+        ApiClient["Axios API client"]
+    end
+
+    subgraph Backend["Backend - Flask REST API"]
+        ApiRoutes["/api/v1 blueprints"]
+        AuthChecks["JWT auth and role checks"]
+        Marketplace["Listings, saved listings, reports"]
+        Messaging["Conversations and messages"]
+        Profiles["Users, breeders, reviews"]
+        AdminTools["Certifications and moderation"]
+    end
+
+    subgraph Data["Data and files"]
+        Database[(PostgreSQL)]
+        Migrations["Alembic migrations"]
+        Cloudinary["Cloudinary uploads"]
+    end
+
+    Visitor --> PublicPages
+    Customer --> ProtectedPages
+    Breeder --> ProtectedPages
+    Admin --> ProtectedPages
+
+    PublicPages --> ApiClient
+    ProtectedPages --> AuthContext
+    AuthContext --> ApiClient
+    ApiClient -->|"HTTP + Bearer token"| ApiRoutes
+
+    ApiRoutes --> AuthChecks
+    AuthChecks --> Marketplace
+    AuthChecks --> Messaging
+    AuthChecks --> Profiles
+    AuthChecks --> AdminTools
+
+    Marketplace --> Database
+    Messaging --> Database
+    Profiles --> Database
+    AdminTools --> Database
+    Database --> Migrations
+
+    Marketplace --> Cloudinary
+    AdminTools --> Cloudinary
+```
+
+### Main Flow
+
+1. Users enter through the React frontend. Public visitors can browse listings and breeder profiles, while customers, breeders, and admins access protected pages based on their role.
+2. The frontend sends API requests through the Axios service layer. Authenticated requests include the JWT token in the `Authorization: Bearer <token>` header.
+3. The Flask backend receives requests through versioned `/api/v1` blueprints. Each domain is separated into its own route module: auth, users, breeders, listings, conversations, messages, reviews, and admin.
+4. The backend validates permissions before applying business rules. It checks authentication, user role, breeder verification status, resource ownership, admin access, and account restrictions.
+5. PostgreSQL stores the core marketplace data: users, breeder profiles, cat listings, listing images, saved listings, conversations, messages, reviews, listing reports, and account restrictions.
+6. Cloudinary stores uploaded files. Listing images and breeder certification documents are uploaded there, then the returned secure URLs are saved in PostgreSQL.
+7. Admin tools keep the marketplace trusted. Admins can approve or reject breeder certifications, moderate reports, remove listings, suspend users, ban accounts, and review platform stats.
+8. Docker Compose runs the local stack with the frontend, backend, PostgreSQL, and optional pgAdmin. Database schema changes are applied through `flask db upgrade`.
+
 ## API Surface
 
 The API is registered under `/api/v1`.
