@@ -1,94 +1,140 @@
 # Purrfect Match MVP
 
-Purrfect Match is a fullstack marketplace MVP that connects verified cat breeders with buyers through trusted listings, breeder verification, and direct messaging.
+Purrfect Match is a full-stack marketplace MVP that connects cat buyers with verified breeders through trusted listings, breeder certification, direct messaging, saved listings, reviews, and admin moderation.
 
-## Architecture overview
+## Current Product Scope
 
-This repository is organized as a monorepo so the frontend, backend, infrastructure, and documentation can evolve together:
+- Public visitors can browse and filter listings, open listing detail pages, and view public breeder profiles.
+- Customers can register, log in, manage their profile and settings, save listings, message breeders, report suspicious listings, and review breeders.
+- Breeders can apply for certification, manage their breeder profile, create listings with image uploads, delete their listings, and reply to customer conversations.
+- Admins can review breeder certifications, moderate listing reports, inspect users, suspend or ban accounts, remove listings, and view dashboard stats.
+- The backend includes JWT authentication, role-based access rules, SQLAlchemy models, Alembic migrations, PostgreSQL persistence, and Cloudinary-backed uploads.
 
-- `frontend/` – React + Vite UI with TailwindCSS, routing, shared components, hooks, and service modules.
-- `backend/` – Flask REST API using an app factory, SQLAlchemy, JWT auth, Flask-Migrate, and placeholder blueprints.
-- `docker/` – Dockerfiles for the frontend and backend services.
-- `docs/` – Reserved for product and technical documentation.
-- `.github/` – Collaboration defaults such as the pull request template.
-
-## Tech stack
+## Tech Stack
 
 ### Frontend
+
 - React 19
 - Vite
-- TailwindCSS
+- Tailwind CSS
 - React Router
 - Axios
 
 ### Backend
+
 - Flask
 - Flask-SQLAlchemy
 - Flask-Migrate
 - Flask-JWT-Extended
 - Flask-CORS
-- Cloudinary SDK
 - PostgreSQL
+- Cloudinary SDK
 - Pytest
+- Gunicorn
 
-### DevOps
+### Infrastructure
+
 - Docker
 - Docker Compose
+- Render Blueprint for the backend and production PostgreSQL
 - Vercel-ready frontend deployment path
-- Render/Railway-ready backend deployment path
 
-## Repository structure
+## Repository Structure
 
 ```text
-project-root/
-├── frontend/
-│   ├── src/
-│   ├── public/
-│   ├── components/
-│   ├── pages/
-│   ├── services/
-│   ├── context/
-│   ├── hooks/
-│   ├── routes/
-│   ├── assets/
-│   └── tests/
-├── backend/
-│   ├── app/
-│   │   ├── models/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── middleware/
-│   │   ├── utils/
-│   │   ├── config/
-│   │   └── tests/
-│   ├── migrations/
-│   ├── requirements.txt
-│   ├── run.py
-│   └── .flaskenv
-├── docker/
-├── docs/
-├── .github/
-│   └── pull_request_template.md
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
-├── README.md
-└── LICENSE
+.
+|-- backend/
+|   |-- app/
+|   |   |-- config/
+|   |   |-- middleware/
+|   |   |-- models/
+|   |   |-- routes/
+|   |   |-- services/
+|   |   |-- tests/
+|   |   `-- utils/
+|   |-- migrations/
+|   |-- requirements.txt
+|   `-- run.py
+|-- frontend/
+|   |-- public/
+|   |-- src/
+|   |   |-- components/
+|   |   |-- context/
+|   |   |-- hooks/
+|   |   |-- pages/
+|   |   |-- routes/
+|   |   `-- services/
+|   `-- package.json
+|-- docker/
+|-- docs/
+|-- scripts/
+|-- docker-compose.yml
+|-- render.yaml
+|-- .env.example
+`-- README.md
 ```
 
-## Installation instructions
+## Environment Variables
 
-### 1. Clone and configure environment variables
+Copy `.env.example` to `.env` before running the project locally.
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string used by the backend. |
+| `POSTGRES_DB` | Local Docker PostgreSQL database name. |
+| `POSTGRES_USER` | Local Docker PostgreSQL user. |
+| `POSTGRES_PASSWORD` | Local Docker PostgreSQL password. |
+| `JWT_SECRET_KEY` | Secret used to sign JWT access tokens. |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name for uploaded files. |
+| `CLOUDINARY_API_KEY` | Cloudinary API key. |
+| `CLOUDINARY_API_SECRET` | Cloudinary API secret. |
+| `PORT` | Backend port, defaulting to `5000`. |
+| `VITE_API_URL` | Frontend API target, for example `http://localhost:5000/api/v1`. |
+| `PGADMIN_DEFAULT_EMAIL` | Optional pgAdmin login email for the Docker admin profile. |
+| `PGADMIN_DEFAULT_PASSWORD` | Optional pgAdmin login password for the Docker admin profile. |
+
+## Local Setup
+
+### Recommended Docker Setup
 
 ```bash
-git clone <repository-url>
-cd purrfect-match-mvp
 cp .env.example .env
+docker compose up --build
 ```
 
-Update the copied `.env` file with real secrets before running services.
+In another terminal, apply database migrations:
 
-### 2. Frontend setup
+```bash
+docker compose exec backend flask db upgrade
+```
+
+Local services:
+
+- Frontend: `http://localhost:5173`
+- Backend health check: `http://localhost:5000/api/v1/health`
+- PostgreSQL: `localhost:5432`
+- pgAdmin: `docker compose --profile admin up --build`, then open `http://localhost:5050`
+
+### Backend Without Docker
+
+Use this path only if PostgreSQL is already running and `DATABASE_URL` points to it.
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+flask db upgrade
+python run.py
+```
+
+On Windows PowerShell, activate the virtual environment with:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+### Frontend Without Docker
 
 ```bash
 cd frontend
@@ -96,86 +142,131 @@ npm install
 npm run dev
 ```
 
-The frontend expects `VITE_API_URL` to target the Flask API, for example `http://localhost:5000/api/v1`.
+## API Surface
 
-### 3. Backend setup
+The API is registered under `/api/v1`.
+
+| Area | Main capabilities |
+| --- | --- |
+| `/health` | Service health checks. |
+| `/auth` | Registration, login, and current authenticated user lookup. |
+| `/users` | Current user profile, public user lookup, and saved listings. |
+| `/breeders` | Breeder applications, authenticated breeder profile management, public breeder profiles, and breeder reviews. |
+| `/listings` | Public listing search/detail, breeder listing creation/deletion, and listing reports. |
+| `/conversations` | Conversation list/detail plus conversation message creation and retrieval. |
+| `/messages` | Message read-status updates. |
+| `/reviews` | Review updates and deletion by the review author. |
+| `/admin` | Stats, certification review, report moderation, user management, account restrictions, and listing removal. |
+
+## Frontend Routes
+
+### Public
+
+- `/`
+- `/login`
+- `/register`
+- `/customer/listings`
+- `/customer/listings/:listingId`
+- `/breeders/:breederId`
+
+### Customer
+
+- `/customer/dashboard`
+- `/customer/profile`
+- `/customer/messages`
+- `/customer/saved`
+- `/customer/settings`
+
+### Breeder
+
+- `/breeder/dashboard`
+- `/breeder/profile`
+- `/breeder/certification`
+- `/breeder/listings`
+- `/breeder/messages`
+
+### Admin
+
+- `/admin/dashboard`
+- `/admin/verifications`
+- `/admin/verifications/:breederId`
+- `/admin/reports`
+- `/admin/reports/:reportId`
+- `/admin/users`
+
+## Testing And QA
+
+Backend tests:
 
 ```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python run.py
+docker compose exec backend pytest app/tests
 ```
 
-The backend reads PostgreSQL, JWT, and Cloudinary credentials from environment variables only.
-
-## Docker instructions
+Backend smoke test:
 
 ```bash
-cp .env.example .env
-docker compose up --build
+bash scripts/api_smoke_tests.sh
 ```
 
-Available services:
+The smoke test expects an upload fixture at `test/images/cat.png`. Add that fixture before running the script if it is not present locally.
 
-- Frontend: `http://localhost:5173`
-- Backend API: `http://localhost:5000/api/v1/health`
-- PostgreSQL: `localhost:5432`
-- pgAdmin (optional): `docker compose --profile admin up --build`
+Frontend checks:
 
-## Development workflow
+```bash
+cd frontend
+npm run lint
+npm run build
+```
 
-1. Create a branch from `develop`.
-2. Add or update backend routes, services, and models inside `backend/app/`.
-3. Build reusable frontend UI in `frontend/components/` and route pages in `frontend/pages/`.
-4. Validate changes locally before opening a pull request.
+## Documentation Status
 
-## Branching strategy
+Existing repository docs:
 
-Recommended branches:
+- `docs/backend-manual-qa-checklist.md`
+- `docs/backend-qa-execution-report.md`
+- `docs/production-database-setup.md`
+- `docs/purrfect-match-backend.postman_collection.json`
+- `docs/purrfect-match-backend.postman_environment.json`
 
-- `main` – production-ready history
-- `develop` – integration branch for upcoming work
-- `feature/*` – new features
-- `fix/*` – bug fixes
+Recommended missing docs:
 
-## API overview
+- `docs/api-reference.md` - a readable API reference. The Postman collection exists, but there is no Markdown endpoint guide.
+- `docs/frontend-qa-checklist.md` - frontend manual QA coverage. Current QA docs focus on the backend.
+- `docs/deployment-checklist.md` - full frontend plus backend deployment steps. The current production doc focuses mostly on the database/backend side.
+- `docs/architecture.md` - system overview, data model summary, roles, and main user flows.
+- `CONTRIBUTING.md` or `.github/pull_request_template.md` - contribution and pull request workflow guidance. The repository currently does not include a `.github/` folder.
 
-Initial placeholder REST resources are registered under `/api/v1`:
+## Deployment
 
-- `/auth`
-- `/users`
-- `/breeders`
-- `/listings`
-- `/conversations`
-- `/admin`
-- `/health`
+### Backend On Render
 
-These routes return placeholder JSON responses so Sprint 1 can begin from a clean, modular Flask blueprint structure.
+The repo includes `render.yaml`, which defines:
 
-## Initial frontend routes
+- one Python backend web service
+- one managed PostgreSQL database
+- automatic `DATABASE_URL` injection
+- startup migrations through `flask db upgrade && gunicorn run:app`
+- health checks at `/api/v1/health`
 
-The frontend currently includes placeholder pages for:
+Required Render secrets:
 
-- Home
-- Login
-- Register
-- Listings
-- Listing detail
-- Breeder dashboard
-- Messages
+```text
+JWT_SECRET_KEY
+CLOUDINARY_CLOUD_NAME
+CLOUDINARY_API_KEY
+CLOUDINARY_API_SECRET
+```
 
-## Deployment overview
+See `docs/production-database-setup.md` for production database notes.
 
-- **Frontend**: deploy the `frontend/` app to Vercel with `VITE_API_URL` configured for the deployed backend.
-- **Backend**: deploy the `backend/` app to Render or Railway with PostgreSQL and environment variables configured in the platform dashboard.
-- **Database**: use managed PostgreSQL in production and keep secrets in deployment environment settings.
+### Frontend On Vercel
 
-## GitHub workflow recommendations
+Deploy `frontend/` as the Vite app root and configure:
 
-- Require pull requests into `main` and `develop`.
-- Use the PR template in `.github/pull_request_template.md`.
-- Prefer small feature branches with focused review scope.
-- Run frontend build/lint and backend tests before requesting review.
-- Protect `main` with reviews and CI checks once workflows are added.
+```text
+VITE_API_URL=https://<backend-domain>/api/v1
+```
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE` for details.
