@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import ImageFilePicker from '../components/ImageFilePicker.jsx'
@@ -35,6 +35,14 @@ function CustomerProfilePage() {
   const [isLoading, setIsLoading] = useState(Boolean(currentUser?.token))
   const [isSaving, setIsSaving] = useState(false)
   const [notice, setNotice] = useState('')
+  const selectedProfilePreview = useMemo(() => (profileImageFiles[0] ? URL.createObjectURL(profileImageFiles[0]) : ''), [profileImageFiles])
+  const currentProfileImage = selectedProfilePreview || storedProfileImage || profile.profilePictureUrl
+
+  useEffect(() => () => {
+    if (selectedProfilePreview) {
+      URL.revokeObjectURL(selectedProfilePreview)
+    }
+  }, [selectedProfilePreview])
 
   useEffect(() => {
     let ignore = false
@@ -94,7 +102,7 @@ function CustomerProfilePage() {
       }
 
       setProfile(toProfile(data.user))
-      setNotice(profileImageFiles.length ? 'Profile saved. Photo is stored locally until backend image upload is available.' : 'Profile saved.')
+      setNotice('Profile saved.')
       setProfileImageFiles([])
     } catch (error) {
       setNotice(error.response?.data?.error?.message ?? error.message ?? 'Profile could not be saved.')
@@ -102,8 +110,6 @@ function CustomerProfilePage() {
       setIsSaving(false)
     }
   }
-
-  const currentProfileImage = storedProfileImage || profile.profilePictureUrl
 
   return (
     <form className="mx-auto grid w-full max-w-5xl gap-8 rounded-xl border border-black bg-[#fbfbff] p-6 md:grid-cols-[0.85fr_1.15fr]" onSubmit={handleSubmit}>
@@ -113,15 +119,10 @@ function CustomerProfilePage() {
         </button>
         <div className="flex flex-col items-center gap-4">
           <div className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-2 border-[#c9bfff] bg-[#f8f7fb] text-4xl text-[#8b7cff]">
-            {profileImageFiles.length ? null : currentProfileImage ? <img alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
+            {currentProfileImage ? <img alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
           </div>
           <div className="w-full max-w-xs">
-            <ImageFilePicker
-              existingImageUrl={currentProfileImage}
-              files={profileImageFiles}
-              helperText="Saved locally until backend image upload is available."
-              onFilesChange={setProfileImageFiles}
-            />
+            <ImageFilePicker files={profileImageFiles} onFilesChange={setProfileImageFiles} showPreview={false} />
           </div>
         </div>
       </section>

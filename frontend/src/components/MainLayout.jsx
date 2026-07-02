@@ -21,6 +21,7 @@ const roleNavigation = {
     { to: '/customer/listings', label: 'Listings' },
     { to: '/customer/messages', label: 'Message' },
     { to: '/customer/saved', label: 'Saved' },
+    { to: '/customer/reviews', label: 'Reviews' },
     { to: '/customer/profile', label: 'Profile' },
   ],
   breeder: [

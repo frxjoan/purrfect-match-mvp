@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import ImageFilePicker from '../components/ImageFilePicker.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
@@ -49,6 +49,14 @@ function BreederProfilePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [notice, setNotice] = useState('')
+  const selectedProfilePreview = useMemo(() => (profileImageFiles[0] ? URL.createObjectURL(profileImageFiles[0]) : ''), [profileImageFiles])
+  const currentProfileImage = selectedProfilePreview || storedProfileImage || accountProfile.profilePictureUrl
+
+  useEffect(() => () => {
+    if (selectedProfilePreview) {
+      URL.revokeObjectURL(selectedProfilePreview)
+    }
+  }, [selectedProfilePreview])
 
   useEffect(() => {
     let ignore = false
@@ -125,7 +133,7 @@ function BreederProfilePage() {
 
       setAccountProfile(toAccountProfile(accountData.user))
       setBreederProfile(toBreederProfile(breederData.breeder_profile))
-      setNotice(profileImageFiles.length ? 'Profile saved. Photo is stored locally until backend image upload is available.' : 'Breeder profile saved.')
+      setNotice('Breeder profile saved.')
       setProfileImageFiles([])
     } catch (error) {
       setNotice(error.response?.data?.error?.message ?? error.message ?? 'Breeder profile could not be saved.')
@@ -134,24 +142,17 @@ function BreederProfilePage() {
     }
   }
 
-  const currentProfileImage = storedProfileImage || accountProfile.profilePictureUrl
-
   return (
     <>
       <SectionHeader eyebrow="Breeder profile" title="Profile" description="Manage your account details and public breeder profile." />
       <form className="grid gap-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[0.85fr_1.15fr]" onSubmit={handleSubmit}>
         {isLoading ? <p className="text-sm font-semibold text-slate-500 lg:col-span-2">Loading breeder profile...</p> : null}
         <section className="grid gap-4">
-          <div className="flex flex-col items-start gap-4">
+          <div className="flex flex-col items-center gap-4">
             <div className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-2 border-[#c9bfff] bg-[#f8f7fb] text-3xl text-[#8b7cff]">
-              {profileImageFiles.length ? null : currentProfileImage ? <img alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
+              {currentProfileImage ? <img alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
             </div>
-            <ImageFilePicker
-              existingImageUrl={currentProfileImage}
-              files={profileImageFiles}
-              helperText="Saved locally until backend image upload is available."
-              onFilesChange={setProfileImageFiles}
-            />
+            <ImageFilePicker files={profileImageFiles} onFilesChange={setProfileImageFiles} showPreview={false} />
           </div>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">First name</span>

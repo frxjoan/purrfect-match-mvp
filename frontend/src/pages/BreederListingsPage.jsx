@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
+import ImageFilePicker from '../components/ImageFilePicker.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { createListing, deleteListing, fetchBreederProfile, fetchListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
@@ -115,10 +116,6 @@ function BreederListingsPage() {
     }
   }
 
-  function handleFiles(event) {
-    updateForm('images', Array.from(event.target.files ?? []))
-  }
-
   async function handleDelete(listingId) {
     setNotice('')
 
@@ -199,10 +196,17 @@ function BreederListingsPage() {
                 <option value="male">Male</option>
               </select>
             </label>
-            <label className="block md:col-span-2">
+            <div className="block md:col-span-2">
               <span className="text-sm font-semibold text-slate-700">Images</span>
-              <input accept="image/*" className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" multiple onChange={handleFiles} type="file" />
-            </label>
+              <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <ImageFilePicker
+                  files={listingForm.images}
+                  helperText="Images are uploaded through the existing backend listing creation endpoint."
+                  multiple
+                  onFilesChange={(files) => updateForm('images', files)}
+                />
+              </div>
+            </div>
             <label className="block md:col-span-2">
               <span className="text-sm font-semibold text-slate-700">Description</span>
               <textarea className="mt-2 min-h-28 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm('description', event.target.value)} value={listingForm.description} />
