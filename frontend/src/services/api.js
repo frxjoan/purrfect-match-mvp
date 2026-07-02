@@ -267,6 +267,16 @@ export async function createBreederReview(breederId, payload) {
   return getResponseData(response)
 }
 
+export async function updateReview(reviewId, payload) {
+  const response = await api.patch(`/reviews/${reviewId}`, payload)
+  return getResponseData(response)
+}
+
+export async function deleteReview(reviewId) {
+  const response = await api.delete(`/reviews/${reviewId}`)
+  return getResponseData(response)
+}
+
 export async function fetchConversations() {
   const response = await api.get('/conversations')
   return getResponseData(response)

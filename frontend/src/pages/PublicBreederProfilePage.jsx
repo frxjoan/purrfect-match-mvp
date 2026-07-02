@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import useAuth from '../hooks/useAuth.js'
-import { createBreederReview, fetchBreederReviews, fetchListings, fetchPublicBreederProfile } from '../services/api.js'
+import { createBreederReview, deleteReview, fetchBreederReviews, fetchListings, fetchPublicBreederProfile, updateReview } from '../services/api.js'
 import { getStoredProfileImage } from '../utils/profileImageStorage.js'
 
 function getInitials(name) {
@@ -48,12 +48,22 @@ function PublicBreederProfilePage() {
   const { breederId } = useParams()
   const [breederProfile, setBreederProfile] = useState(null)
   const [comment, setComment] = useState('')
+  const [deletingReviewId, setDeletingReviewId] = useState(null)
+  const [editComment, setEditComment] = useState('')
+  const [editingReviewId, setEditingReviewId] = useState(null)
+  const [editRating, setEditRating] = useState('5')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmittingReview, setIsSubmittingReview] = useState(false)
+  const [isUpdatingReview, setIsUpdatingReview] = useState(false)
   const [listings, setListings] = useState([])
   const [notice, setNotice] = useState('')
   const [rating, setRating] = useState('5')
   const [reviews, setReviews] = useState([])
+
+  async function loadReviews() {
+    const reviewData = await fetchBreederReviews(breederId)
+    setReviews(reviewData.reviews ?? [])
+  }
 
   useEffect(() => {
     let ignore = false
@@ -102,12 +112,20 @@ function PublicBreederProfilePage() {
     return (total / reviews.length).toFixed(1)
   }, [reviews])
 
+  const ownReview = useMemo(
+    () => reviews.find((review) => Number(review.reviewer_id) === Number(currentUser?.id)),
+    [currentUser?.id, reviews],
+  )
   const isOwnBreederProfile = Number(currentUser?.breeder_profile?.id) === Number(breederId)
-  const canReview = Boolean(currentUser?.token) && !isOwnBreederProfile
+  const canReview = Boolean(currentUser?.token) && !isOwnBreederProfile && !ownReview
   const displayName = breederProfile?.display_name ?? breederProfile?.business_name ?? 'Breeder profile'
   const ownerName = breederProfile?.owner_name ?? breederProfile?.user?.display_name ?? ''
   const breederAvatarUser = breederProfile?.user ?? { id: breederProfile?.user_id, profile_picture_url: breederProfile?.profile_picture_url }
   const profilePhoto = getAvatarUrl(breederAvatarUser) || breederProfile?.profile_picture_url
+
+  function canDeleteReview(review) {
+    return currentUser?.role === 'admin' || Number(review.reviewer_id) === Number(currentUser?.id)
+  }
 
   async function handleSubmitReview(event) {
     event.preventDefault()
@@ -133,6 +151,70 @@ function PublicBreederProfilePage() {
       setNotice(error.response?.data?.error?.message ?? 'Review could not be submitted.')
     } finally {
       setIsSubmittingReview(false)
+    }
+  }
+
+  function startEditReview(review) {
+    setEditingReviewId(review.id)
+    setEditRating(String(review.rating ?? 5))
+    setEditComment(review.comment ?? '')
+    setNotice('')
+  }
+
+  async function handleUpdateReview(event) {
+    event.preventDefault()
+
+    if (!editingReviewId) {
+      return
+    }
+
+    setIsUpdatingReview(true)
+    setNotice('')
+
+    try {
+      const data = await updateReview(editingReviewId, {
+        comment: editComment.trim() || undefined,
+        rating: Number(editRating),
+      })
+      setReviews((currentReviews) => currentReviews.map((review) => (review.id === editingReviewId ? data.review : review)))
+      setEditingReviewId(null)
+      setEditComment('')
+      setEditRating('5')
+      setNotice('Review updated.')
+    } catch (error) {
+      setNotice(error.response?.data?.error?.message ?? 'Review could not be updated.')
+    } finally {
+      setIsUpdatingReview(false)
+    }
+  }
+
+  async function handleDeleteReview(review) {
+    if (!canDeleteReview(review)) {
+      return
+    }
+
+    const confirmed = window.confirm('Delete this review? This action cannot be undone.')
+
+    if (!confirmed) {
+      return
+    }
+
+    setDeletingReviewId(review.id)
+    setNotice('')
+
+    try {
+      await deleteReview(review.id)
+      if (editingReviewId === review.id) {
+        setEditingReviewId(null)
+        setEditComment('')
+        setEditRating('5')
+      }
+      await loadReviews()
+      setNotice('Review deleted.')
+    } catch (error) {
+      setNotice(error.response?.data?.error?.message ?? 'Review could not be deleted.')
+    } finally {
+      setDeletingReviewId(null)
     }
   }
 
@@ -192,6 +274,7 @@ function PublicBreederProfilePage() {
             <h2 className="text-xl font-bold text-slate-950">Leave a review</h2>
             {!currentUser ? <p className="mt-3 text-sm text-slate-600">Sign in to review this breeder.</p> : null}
             {isOwnBreederProfile ? <p className="mt-3 text-sm text-slate-600">You cannot review your own breeder profile.</p> : null}
+            {ownReview ? <p className="mt-3 text-sm text-slate-600">You already reviewed this breeder. You can edit your review below.</p> : null}
             <label className="mt-5 block">
               <span className="text-sm font-semibold text-slate-700">Rating</span>
               <select className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" disabled={!canReview || isSubmittingReview} onChange={(event) => setRating(event.target.value)} value={rating}>
@@ -218,6 +301,9 @@ function PublicBreederProfilePage() {
               {reviews.length ? reviews.map((review) => {
                 const reviewerName = getReviewerName(review)
                 const reviewerAvatar = getAvatarUrl(review.reviewer)
+                const isOwnReview = Number(review.reviewer_id) === Number(currentUser?.id)
+                const isEditing = editingReviewId === review.id
+                const showDeleteReview = canDeleteReview(review)
 
                 return (
                   <article key={review.id} className="rounded-lg bg-slate-50 p-4">
@@ -230,8 +316,36 @@ function PublicBreederProfilePage() {
                       </div>
                       <p className="text-sm font-semibold text-[#6c5ce7]">{ratingLabel(review.rating)}</p>
                     </div>
-                    {review.comment ? <p className="mt-3 text-sm leading-6 text-slate-700">{review.comment}</p> : null}
-                    {review.created_at ? <p className="mt-3 text-xs text-slate-500">{formatDate(review.created_at)}</p> : null}
+                    {isEditing ? (
+                      <form className="mt-4 grid gap-3" onSubmit={handleUpdateReview}>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-700">Rating</span>
+                          <select className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" disabled={isUpdatingReview} onChange={(event) => setEditRating(event.target.value)} value={editRating}>
+                            {[5, 4, 3, 2, 1].map((value) => <option key={value} value={value}>{value}/5</option>)}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-700">Comment</span>
+                          <textarea className="mt-2 min-h-24 w-full rounded-lg border border-slate-300 px-3 py-3" disabled={isUpdatingReview} onChange={(event) => setEditComment(event.target.value)} value={editComment} />
+                        </label>
+                        <div className="flex flex-wrap gap-3">
+                          <ActionButton disabled={isUpdatingReview} type="submit">{isUpdatingReview ? 'Saving...' : 'Save review'}</ActionButton>
+                          <ActionButton disabled={isUpdatingReview} onClick={() => setEditingReviewId(null)} type="button" variant="secondary">Cancel</ActionButton>
+                          {showDeleteReview ? <ActionButton disabled={isUpdatingReview || deletingReviewId === review.id} onClick={() => handleDeleteReview(review)} type="button" variant="danger">{deletingReviewId === review.id ? 'Deleting...' : 'Delete review'}</ActionButton> : null}
+                        </div>
+                      </form>
+                    ) : (
+                      <>
+                        {review.comment ? <p className="mt-3 text-sm leading-6 text-slate-700">{review.comment}</p> : null}
+                        {review.created_at ? <p className="mt-3 text-xs text-slate-500">{formatDate(review.created_at)}</p> : null}
+                        {(isOwnReview || showDeleteReview) ? (
+                          <div className="mt-3 flex flex-wrap gap-3">
+                            {isOwnReview ? <ActionButton onClick={() => startEditReview(review)} type="button" variant="secondary">Edit review</ActionButton> : null}
+                            {showDeleteReview ? <ActionButton disabled={deletingReviewId === review.id} onClick={() => handleDeleteReview(review)} type="button" variant="danger">{deletingReviewId === review.id ? 'Deleting...' : 'Delete review'}</ActionButton> : null}
+                          </div>
+                        ) : null}
+                      </>
+                    )}
                   </article>
                 )
               }) : <p className="text-sm text-slate-500">No reviews yet.</p>}
