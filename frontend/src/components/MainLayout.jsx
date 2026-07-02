@@ -300,8 +300,10 @@ function MainLayout({ children }) {
               >
                 {avatarImage ? (
                   <img alt="Profile" className="h-10 w-10 rounded-full object-cover" src={avatarImage} />
-                ) : (
+                ) : currentUser ? (
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-[#eee7ff] text-xs font-bold text-[#6c5ce7]">{avatarInitials}</span>
+                ) : (
+                  <img alt="Customer" className="h-10 w-10 rounded-full object-contain" src={customerIcon} />
                 )}
               </button>
               {isProfileMenuOpen ? (

@@ -3,14 +3,30 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { createBreederReview, fetchBreederReviews, fetchListings, fetchPublicBreederProfile } from '../services/api.js'
+import { getStoredProfileImage } from '../utils/profileImageStorage.js'
 
 function getInitials(name) {
-  return name
-    .split(' ')
+  return String(name || 'PM')
+    .split(/\s+|@/)
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'PM'
+}
+
+function getAvatarUrl(person) {
+  return getStoredProfileImage(person)
+    || person?.profile_picture_url
+    || person?.profilePictureUrl
+    || person?.avatar_url
+    || ''
+}
+
+function getReviewerName(review) {
+  return review.reviewer?.display_name
+    || review.reviewer?.username
+    || review.reviewer?.email
+    || 'Customer'
 }
 
 function formatDate(value) {
@@ -90,7 +106,8 @@ function PublicBreederProfilePage() {
   const canReview = Boolean(currentUser?.token) && !isOwnBreederProfile
   const displayName = breederProfile?.display_name ?? breederProfile?.business_name ?? 'Breeder profile'
   const ownerName = breederProfile?.owner_name ?? breederProfile?.user?.display_name ?? ''
-  const profilePhoto = breederProfile?.profile_picture_url ?? breederProfile?.user?.profile_picture_url
+  const breederAvatarUser = breederProfile?.user ?? { id: breederProfile?.user_id, profile_picture_url: breederProfile?.profile_picture_url }
+  const profilePhoto = getAvatarUrl(breederAvatarUser) || breederProfile?.profile_picture_url
 
   async function handleSubmitReview(event) {
     event.preventDefault()
@@ -198,16 +215,26 @@ function PublicBreederProfilePage() {
           <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-bold text-slate-950">Reviews</h2>
             <div className="mt-5 space-y-4">
-              {reviews.length ? reviews.map((review) => (
-                <article key={review.id} className="rounded-lg bg-slate-50 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="font-semibold text-slate-950">{review.reviewer?.display_name ?? 'Customer'}</p>
-                    <p className="text-sm font-semibold text-[#6c5ce7]">{ratingLabel(review.rating)}</p>
-                  </div>
-                  {review.comment ? <p className="mt-3 text-sm leading-6 text-slate-700">{review.comment}</p> : null}
-                  {review.created_at ? <p className="mt-3 text-xs text-slate-500">{formatDate(review.created_at)}</p> : null}
-                </article>
-              )) : <p className="text-sm text-slate-500">No reviews yet.</p>}
+              {reviews.length ? reviews.map((review) => {
+                const reviewerName = getReviewerName(review)
+                const reviewerAvatar = getAvatarUrl(review.reviewer)
+
+                return (
+                  <article key={review.id} className="rounded-lg bg-slate-50 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-xs font-bold text-[#6c5ce7]">
+                          {reviewerAvatar ? <img alt={reviewerName} className="h-full w-full object-cover" src={reviewerAvatar} /> : getInitials(reviewerName)}
+                        </div>
+                        <p className="truncate font-semibold text-slate-950">{reviewerName}</p>
+                      </div>
+                      <p className="text-sm font-semibold text-[#6c5ce7]">{ratingLabel(review.rating)}</p>
+                    </div>
+                    {review.comment ? <p className="mt-3 text-sm leading-6 text-slate-700">{review.comment}</p> : null}
+                    {review.created_at ? <p className="mt-3 text-xs text-slate-500">{formatDate(review.created_at)}</p> : null}
+                  </article>
+                )
+              }) : <p className="text-sm text-slate-500">No reviews yet.</p>}
             </div>
           </section>
         </div>
