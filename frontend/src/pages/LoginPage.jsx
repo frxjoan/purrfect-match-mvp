@@ -101,7 +101,7 @@ function LoginPage() {
         token: data.token,
       }
 
-      if (selectedRole !== 'admin' && user.role !== selectedRole) {
+      if (user.role !== 'admin' && selectedRole !== 'admin' && user.role !== selectedRole) {
         setNotice(`This account is registered as ${user.role}. Please choose the matching sign-in option.`)
         return
       }
@@ -166,3 +166,4 @@ function LoginPage() {
 }
 
 export default LoginPage
+

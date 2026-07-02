@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { createListing, deleteListing, fetchBreederProfile, fetchListings } from '../services/api.js'
@@ -36,6 +36,16 @@ function BreederListingsPage() {
     async function loadListings() {
       setLoadingListings(true)
       try {
+        if (currentUser?.role === 'admin') {
+          const listingData = await fetchListings()
+          if (!ignore) {
+            setBreederProfile(null)
+            setListings(listingData.listings)
+            setNotice('')
+          }
+          return
+        }
+
         const [profileData, listingData] = await Promise.all([
           fetchBreederProfile(),
           fetchListings(),
@@ -63,7 +73,7 @@ function BreederListingsPage() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [currentUser?.role])
 
   function updateForm(field, value) {
     setListingForm((current) => ({ ...current, [field]: value }))
