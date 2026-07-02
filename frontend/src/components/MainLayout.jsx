@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import customerIcon from '../assets/icon/customer-icon.png'
 import useAuth from '../hooks/useAuth.js'
+import { getStoredProfileImage, PROFILE_IMAGE_EVENT } from '../utils/profileImageStorage.js'
 
 const ACTIVE_INTERFACE_STORAGE_KEY = 'purrfect-match-active-interface'
 
@@ -15,33 +16,31 @@ const publicNavigation = [
 
 const roleNavigation = {
   customer: [
+    { to: '/', label: 'Home' },
     { to: '/customer/dashboard', label: 'Dashboard' },
     { to: '/customer/listings', label: 'Listings' },
+    { to: '/customer/messages', label: 'Message' },
     { to: '/customer/saved', label: 'Saved' },
-    { to: '/customer/messages', label: 'Messages' },
     { to: '/customer/profile', label: 'Profile' },
-    { to: '/customer/settings', label: 'Settings' },
   ],
   breeder: [
-    { to: '/breeder/dashboard', label: 'Breeder Dashboard' },
-    { to: '/breeder/listings', label: 'My Listings' },
+    { to: '/', label: 'Home' },
+    { to: '/breeder/dashboard', label: 'Dashboard' },
+    { to: '/breeder/listings', label: 'Listings' },
+    { to: '/breeder/messages', label: 'Message' },
+    { to: '/breeder/profile', label: 'Profile' },
     { to: '/breeder/certification', label: 'Certification' },
-    { to: '/breeder/messages', label: 'Breeder Messages' },
-    { to: '/breeder/profile', label: 'Breeder Profile' },
   ],
   admin: [
-    { to: '/admin/dashboard', label: 'Admin Dashboard' },
-    { to: '/admin/verifications', label: 'Verifications' },
+    { to: '/', label: 'Home' },
+    { to: '/admin/dashboard', label: 'Dashboard' },
     { to: '/admin/reports', label: 'Reports' },
+    { to: '/admin/verifications', label: 'Certifications / Licenses' },
     { to: '/admin/users', label: 'Users' },
+    { to: '/customer/profile', label: 'Profile' },
   ],
 }
 
-const adminAllNavigation = [
-  ...roleNavigation.admin,
-  ...roleNavigation.breeder,
-  ...roleNavigation.customer,
-]
 
 const interfaceOptions = {
   customer: {
@@ -128,13 +127,22 @@ function getNavigationForInterface(activeInterface, user) {
     return publicNavigation
   }
 
-  if (user.role === 'admin' && activeInterface === 'admin') {
-    return adminAllNavigation
-  }
-
   return roleNavigation[activeInterface] ?? roleNavigation.customer
 }
 
+function getInitials(user) {
+  const name = [user?.first_name, user?.last_name].filter(Boolean).join(' ') || user?.display_name || user?.email || 'PM'
+  return name
+    .split(/\s+|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'PM'
+}
+
+function getBackendProfileImage(user) {
+  return user?.profile_picture_url ?? user?.profilePictureUrl ?? ''
+}
 function NavigationLinks({ navigation, onNavigate }) {
   return navigation.map((item) => (
     <NavLink
@@ -159,18 +167,39 @@ function MainLayout({ children }) {
   const [activeInterface, setActiveInterface] = useState(getStoredInterface)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
+  const [localProfileImage, setLocalProfileImage] = useState(() => getStoredProfileImage(currentUser))
   const allowedInterfaces = currentUser ? getAllowedInterfaces(currentUser) : []
   const resolvedInterface = allowedInterfaces.some((option) => option.value === activeInterface)
     ? activeInterface
     : getDefaultInterface(currentUser)
   const activeOption = interfaceOptions[resolvedInterface] ?? interfaceOptions.customer
   const navigation = currentUser ? getNavigationForInterface(resolvedInterface, currentUser) : publicNavigation
-  const customerMenu = [
-    { to: '/customer/profile', label: 'Profile' },
-    { to: '/customer/saved', label: 'Announce liked' },
-    { to: '/customer/messages', label: 'Message' },
-  ]
-  const profileMenu = currentUser && resolvedInterface === 'customer' ? customerMenu : navigation
+  const profileMenu = navigation
+  const avatarImage = localProfileImage || getBackendProfileImage(currentUser)
+  const avatarInitials = getInitials(currentUser)
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLocalProfileImage('')
+      return
+    }
+
+    setLocalProfileImage(getStoredProfileImage(currentUser))
+  }, [currentUser])
+
+  useEffect(() => {
+    function refreshProfileImage() {
+      setLocalProfileImage(getStoredProfileImage(currentUser))
+    }
+
+    window.addEventListener(PROFILE_IMAGE_EVENT, refreshProfileImage)
+    window.addEventListener('storage', refreshProfileImage)
+
+    return () => {
+      window.removeEventListener(PROFILE_IMAGE_EVENT, refreshProfileImage)
+      window.removeEventListener('storage', refreshProfileImage)
+    }
+  }, [currentUser])
 
   useEffect(() => {
     if (!currentUser) {
@@ -262,15 +291,18 @@ function MainLayout({ children }) {
               <button
                 aria-expanded={isProfileMenuOpen}
                 aria-label="Open profile menu"
-                className="relative h-12 w-12 rounded-full border-0 bg-transparent"
+                className="grid h-12 w-12 place-items-center rounded-full border border-black bg-white shadow-sm transition hover:bg-[#f7f3ff]"
                 onClick={() => {
                   setIsProfileMenuOpen((isOpen) => !isOpen)
                   setIsRoleMenuOpen(false)
                 }}
                 type="button"
               >
-                <span className="absolute left-1/2 top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-black bg-white" />
-                <span className="absolute bottom-1 left-1/2 h-5 w-8 -translate-x-1/2 rounded-t-full border-2 border-black bg-white" />
+                {avatarImage ? (
+                  <img alt="Profile" className="h-10 w-10 rounded-full object-cover" src={avatarImage} />
+                ) : (
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-[#eee7ff] text-xs font-bold text-[#6c5ce7]">{avatarInitials}</span>
+                )}
               </button>
               {isProfileMenuOpen ? (
                 <div className="absolute right-0 top-14 z-40 w-64 rounded-lg border border-black bg-[#f8f7fb] p-4 shadow-xl">

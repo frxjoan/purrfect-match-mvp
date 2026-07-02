@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import ImageFilePicker from '../components/ImageFilePicker.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/api.js'
+import { getStoredProfileImage, profileImageFileToDataUrl, setStoredProfileImage } from '../utils/profileImageStorage.js'
 
 const emptyProfile = {
   email: '',
@@ -28,6 +30,8 @@ function CustomerProfilePage() {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(emptyProfile)
+  const [profileImageFiles, setProfileImageFiles] = useState([])
+  const [storedProfileImage, setStoredProfileImageState] = useState(() => getStoredProfileImage(currentUser))
   const [isLoading, setIsLoading] = useState(Boolean(currentUser?.token))
   const [isSaving, setIsSaving] = useState(false)
   const [notice, setNotice] = useState('')
@@ -41,6 +45,7 @@ function CustomerProfilePage() {
         const data = await fetchCurrentUserProfile()
         if (!ignore) {
           setProfile(toProfile(data.user))
+          setStoredProfileImageState(getStoredProfileImage(data.user))
           setNotice('')
         }
       } catch (error) {
@@ -71,21 +76,34 @@ function CustomerProfilePage() {
     setIsSaving(true)
 
     try {
+      // TODO: Replace local data URL persistence with backend binary upload when an upload endpoint exists.
       const data = await updateCurrentUserProfile({
         first_name: profile.firstName.trim(),
         last_name: profile.lastName.trim(),
         location: profile.location.trim() || null,
         phone_number: profile.phoneNumber.trim() || null,
-        profile_picture_url: profile.profilePictureUrl.trim() || null,
+        profile_picture_url: profile.profilePictureUrl || null,
       })
+
+      if (profileImageFiles[0]) {
+        const dataUrl = await profileImageFileToDataUrl(profileImageFiles[0])
+        setStoredProfileImage(data.user, dataUrl)
+        setStoredProfileImageState(dataUrl)
+      } else {
+        setStoredProfileImageState(getStoredProfileImage(data.user))
+      }
+
       setProfile(toProfile(data.user))
-      setNotice('Profile saved.')
+      setNotice(profileImageFiles.length ? 'Profile saved. Photo is stored locally until backend image upload is available.' : 'Profile saved.')
+      setProfileImageFiles([])
     } catch (error) {
-      setNotice(error.response?.data?.error?.message ?? 'Profile could not be saved.')
+      setNotice(error.response?.data?.error?.message ?? error.message ?? 'Profile could not be saved.')
     } finally {
       setIsSaving(false)
     }
   }
+
+  const currentProfileImage = storedProfileImage || profile.profilePictureUrl
 
   return (
     <form className="mx-auto grid w-full max-w-5xl gap-8 rounded-xl border border-black bg-[#fbfbff] p-6 md:grid-cols-[0.85fr_1.15fr]" onSubmit={handleSubmit}>
@@ -95,25 +113,30 @@ function CustomerProfilePage() {
         </button>
         <div className="flex flex-col items-center gap-4">
           <div className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-2 border-[#c9bfff] bg-[#f8f7fb] text-4xl text-[#8b7cff]">
-            {profile.profilePictureUrl ? <img alt="Profile" className="h-full w-full object-cover" src={profile.profilePictureUrl} /> : 'PM'}
+            {profileImageFiles.length ? null : currentProfileImage ? <img alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
           </div>
-          <label className="w-full max-w-xs text-center">
-            <span className="text-sm font-semibold text-slate-700">Profile photo URL</span>
-            <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 text-sm" onChange={(event) => updateProfile('profilePictureUrl', event.target.value)} type="url" value={profile.profilePictureUrl} />
-          </label>
+          <div className="w-full max-w-xs">
+            <ImageFilePicker
+              existingImageUrl={currentProfileImage}
+              files={profileImageFiles}
+              helperText="Saved locally until backend image upload is available."
+              onFilesChange={setProfileImageFiles}
+            />
+          </div>
         </div>
       </section>
       <section className="grid gap-4">
         {isLoading ? <p className="text-sm font-semibold text-slate-500">Loading profile...</p> : null}
         <label className="block">
-          <span className="text-sm font-medium text-slate-900">Name</span>
-          <div className="mt-2 grid gap-3 sm:grid-cols-2">
-            <input className="w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('firstName', event.target.value)} value={profile.firstName} />
-            <input className="w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('lastName', event.target.value)} value={profile.lastName} />
-          </div>
+          <span className="text-sm font-medium text-slate-900">First name</span>
+          <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('firstName', event.target.value)} value={profile.firstName} />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-slate-900">Mail</span>
+          <span className="text-sm font-medium text-slate-900">Last name</span>
+          <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('lastName', event.target.value)} value={profile.lastName} />
+        </label>
+        <label className="block">
+          <span className="text-sm font-medium text-slate-900">Email</span>
           <input className="mt-2 w-full rounded-xl border border-black bg-slate-100 px-4 py-2 text-slate-500" readOnly type="email" value={profile.email} />
         </label>
         <label className="block">
