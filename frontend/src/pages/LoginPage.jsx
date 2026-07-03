@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import useAuth from '../hooks/useAuth.js'
@@ -10,7 +10,7 @@ const emptyForm = {
 }
 
 function LoginPage() {
-  const { currentUser, getRoleDashboard, signIn } = useAuth()
+  const { currentUser, signIn } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const searchParams = new URLSearchParams(location.search)
@@ -20,13 +20,11 @@ function LoginPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
-  const redirectTarget = location.state?.from
-
   useEffect(() => {
     if (currentUser) {
-      navigate(redirectTarget ?? getRoleDashboard(currentUser.role), { replace: true })
+      navigate('/', { replace: true })
     }
-  }, [currentUser, getRoleDashboard, navigate, redirectTarget])
+  }, [currentUser, navigate])
 
   function updateForm(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -107,7 +105,7 @@ function LoginPage() {
       }
 
       signIn(user)
-      navigate(redirectTarget ?? getRoleDashboard(user.role), { replace: true })
+      navigate('/', { replace: true })
     } catch (error) {
       setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your backend account credentials.')
     } finally {

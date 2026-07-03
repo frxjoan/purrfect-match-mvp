@@ -3,6 +3,7 @@ import DashboardRedirect from '../components/DashboardRedirect.jsx'
 import MainLayout from '../components/MainLayout.jsx'
 import ProtectedRoute from '../components/ProtectedRoute.jsx'
 import AdminDashboardPage from '../pages/AdminDashboardPage.jsx'
+import AdminMessagesPage from '../pages/AdminMessagesPage.jsx'
 import AdminReportsPage from '../pages/AdminReportsPage.jsx'
 import AdminUsersPage from '../pages/AdminUsersPage.jsx'
 import BreederCertificationPage from '../pages/BreederCertificationPage.jsx'
@@ -64,6 +65,7 @@ function AppRouter() {
           <Route path="/admin/verifications" element={<ProtectedRoute allowedRole="admin"><PendingVerificationPage /></ProtectedRoute>} />
           <Route path="/admin/verifications/:breederId" element={<ProtectedRoute allowedRole="admin"><PendingVerificationPage /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><AdminReportsPage /></ProtectedRoute>} />
+          <Route path="/admin/messages" element={<ProtectedRoute allowedRole="admin"><AdminMessagesPage /></ProtectedRoute>} />
           <Route path="/admin/reports/:reportId" element={<ProtectedRoute allowedRole="admin"><AdminReportsPage /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsersPage /></ProtectedRoute>} />
 

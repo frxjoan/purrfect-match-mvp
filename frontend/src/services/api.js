@@ -224,6 +224,11 @@ export async function updateCurrentUserProfile(payload) {
   return getResponseData(response)
 }
 
+export async function fetchPublicUserProfile(userId) {
+  const response = await api.get(`/users/${userId}`)
+  return getResponseData(response)
+}
+
 export async function fetchBreederProfile() {
   const response = await api.get('/breeders/me')
   return getResponseData(response)

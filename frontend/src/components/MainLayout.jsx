@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import customerIcon from '../assets/icon/customer-icon.png'
 import useAuth from '../hooks/useAuth.js'
+import { fetchConversation, fetchConversations } from '../services/api.js'
 import { getStoredProfileImage, PROFILE_IMAGE_EVENT } from '../utils/profileImageStorage.js'
 
 const ACTIVE_INTERFACE_STORAGE_KEY = 'purrfect-match-active-interface'
@@ -36,6 +37,7 @@ const roleNavigation = {
     { to: '/', label: 'Home' },
     { to: '/admin/dashboard', label: 'Dashboard' },
     { to: '/admin/reports', label: 'Reports' },
+    { to: '/admin/messages', label: 'Message' },
     { to: '/admin/verifications', label: 'Certifications / Licenses' },
     { to: '/admin/users', label: 'Users' },
     { to: '/customer/profile', label: 'Profile' },
@@ -144,7 +146,7 @@ function getInitials(user) {
 function getBackendProfileImage(user) {
   return user?.profile_picture_url ?? user?.profilePictureUrl ?? ''
 }
-function NavigationLinks({ navigation, onNavigate }) {
+function NavigationLinks({ hasUnreadMessages = false, navigation, onNavigate }) {
   return navigation.map((item) => (
     <NavLink
       key={item.to}
@@ -157,7 +159,10 @@ function NavigationLinks({ navigation, onNavigate }) {
         ].join(' ')
       }
     >
-      {item.label}
+      <span className="inline-flex items-center justify-center gap-2">
+        <span>{item.label}</span>
+        {item.label === 'Message' && hasUnreadMessages ? <span className="h-2 w-2 rounded-full bg-rose-500" aria-label="Unread messages" /> : null}
+      </span>
     </NavLink>
   ))
 }
@@ -169,6 +174,7 @@ function MainLayout({ children }) {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
   const [localProfileImage, setLocalProfileImage] = useState(() => getStoredProfileImage(currentUser))
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false)
   const allowedInterfaces = currentUser ? getAllowedInterfaces(currentUser) : []
   const resolvedInterface = allowedInterfaces.some((option) => option.value === activeInterface)
     ? activeInterface
@@ -179,6 +185,50 @@ function MainLayout({ children }) {
   const avatarImage = localProfileImage || getBackendProfileImage(currentUser)
   const avatarInitials = getInitials(currentUser)
 
+  useEffect(() => {
+    let ignore = false
+
+    async function loadUnreadMessages() {
+      if (!currentUser?.token) {
+        setHasUnreadMessages(false)
+        return
+      }
+
+      try {
+        const data = await fetchConversations()
+        const conversations = data.conversations ?? []
+        const details = await Promise.allSettled(conversations.map((conversation) => fetchConversation(conversation.id)))
+        const hasUnread = details.some((result) => {
+          if (result.status !== 'fulfilled') {
+            return false
+          }
+
+          const messages = result.value.conversation?.messages ?? []
+          return messages.some((message) => message.sender_id !== currentUser.id && message.is_read === false)
+        })
+
+        if (!ignore) {
+          setHasUnreadMessages(hasUnread)
+        }
+      } catch {
+        if (!ignore) {
+          setHasUnreadMessages(false)
+        }
+      }
+    }
+
+    function handleUnreadChange(event) {
+      setHasUnreadMessages(Boolean(event.detail?.hasUnread))
+    }
+
+    loadUnreadMessages()
+    window.addEventListener('purrfect-match-messages-unread-change', handleUnreadChange)
+
+    return () => {
+      ignore = true
+      window.removeEventListener('purrfect-match-messages-unread-change', handleUnreadChange)
+    }
+  }, [currentUser?.id, currentUser?.token])
   useEffect(() => {
     if (!currentUser) {
       setLocalProfileImage('')
@@ -310,7 +360,7 @@ function MainLayout({ children }) {
               {isProfileMenuOpen ? (
                 <div className="absolute right-0 top-14 z-40 w-64 rounded-lg border border-black bg-[#f8f7fb] p-4 shadow-xl">
                   <nav className="grid gap-3">
-                    <NavigationLinks navigation={profileMenu} onNavigate={() => setIsProfileMenuOpen(false)} />
+                    <NavigationLinks hasUnreadMessages={hasUnreadMessages} navigation={profileMenu} onNavigate={() => setIsProfileMenuOpen(false)} />
                     {!currentUser ? null : (
                       <button
                         className="rounded-full border border-black bg-white px-4 py-2 text-xs font-medium transition hover:bg-[#fff0f6]"
