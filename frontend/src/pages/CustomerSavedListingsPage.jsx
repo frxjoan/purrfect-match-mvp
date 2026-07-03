@@ -6,12 +6,14 @@ import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchSavedListings, unsaveListing } from '../services/api.js'
+import { applyListingFilters, emptyListingFilters } from '../utils/listingFilters.js'
 
 function CustomerSavedListingsPage() {
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
+  const [filters, setFilters] = useState(emptyListingFilters)
   const [listings, setListings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -36,7 +38,7 @@ function CustomerSavedListingsPage() {
         if (isActive) {
           setListings([])
           setSavedListingIds([])
-          setLoadError(error.response?.data?.error?.message ?? 'Saved listings could not be loaded from the backend.')
+          setLoadError(error.response?.data?.error?.message ?? 'Saved listings could not be loaded.')
         }
       } finally {
         if (isActive) {
@@ -53,11 +55,8 @@ function CustomerSavedListingsPage() {
   }, [])
 
   const savedListings = useMemo(
-    () => listings.filter((listing) => {
-      const haystack = `${listing.name} ${listing.title} ${listing.breed} ${listing.location}`.toLowerCase()
-      return haystack.includes(query.toLowerCase())
-    }),
-    [listings, query],
+    () => applyListingFilters(listings, query, filters),
+    [filters, listings, query],
   )
 
   async function removeSavedListing(listingId) {
@@ -83,7 +82,7 @@ function CustomerSavedListingsPage() {
   return (
     <>
       <div className="mx-auto w-full max-w-6xl space-y-10">
-        <CustomerSearchBar onChange={setQuery} value={query} />
+        <CustomerSearchBar filters={filters} listings={listings} onChange={setQuery} onFiltersChange={setFilters} value={query} />
         {loadError ? (
           <div className="rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">
             {loadError}
@@ -102,7 +101,7 @@ function CustomerSavedListingsPage() {
           />
         ) : (
           <div className="rounded-xl border border-black bg-white p-8 text-center text-sm">
-            No liked announcements yet.
+            No liked announcements match this search or filter yet.
           </div>
         )}
       </div>

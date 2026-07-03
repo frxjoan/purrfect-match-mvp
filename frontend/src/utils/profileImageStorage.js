@@ -35,7 +35,6 @@ export function setStoredProfileImage(user, dataUrl) {
     window.localStorage.setItem(key, dataUrl)
     emitProfileImageChange(user, dataUrl)
   } catch {
-    // Browser storage can fail when quota is full; profile fields still save through the backend.
   }
 }
 

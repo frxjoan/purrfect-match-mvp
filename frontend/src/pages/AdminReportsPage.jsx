@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
@@ -264,11 +264,11 @@ function AdminReportsPage() {
 
   return (
     <>
-      <SectionHeader eyebrow="Admin reports" title="Reports management" description="Review listing reports from the backend moderation queue." />
+      <SectionHeader eyebrow="Admin reports" title="Reports management" description="Review listing reports from the moderation queue." />
       <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           {isLoading ? <p className="text-sm text-slate-500">Loading reports...</p> : null}
-          {!isLoading && moderationReports.length === 0 ? <p className="text-sm text-slate-500">No reports in the backend queue.</p> : null}
+          {!isLoading && moderationReports.length === 0 ? <p className="text-sm text-slate-500">No reports in the moderation queue.</p> : null}
           {moderationReports.map((report) => (
             <ActionButton className="w-full justify-start" key={report.id} to={`/admin/reports/${report.id}`} variant={activeReport?.id === report.id ? 'primary' : 'secondary'}>
               {getReportSummary(report, listingDetailsById[report.listing_id])}
@@ -360,7 +360,7 @@ function AdminReportsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
           <form className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 shadow-xl" onSubmit={applySanctionAndAccept}>
             <h2 className="text-xl font-bold text-slate-950">Choose moderation action</h2>
-            <p className="mt-2 text-sm text-slate-600">Select a backend-supported action before accepting this report.</p>
+            <p className="mt-2 text-sm text-slate-600">Select an action before accepting this report.</p>
             <div className="mt-5 grid gap-3">
               {sanctionOptions.map((option) => (
                 <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3" key={option.value}>

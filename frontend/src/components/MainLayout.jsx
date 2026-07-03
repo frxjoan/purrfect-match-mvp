@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import customerIcon from '../assets/icon/customer-icon.png'
+import logoImage from '../../assets/logo/logo-purrfect-match.png'
 import useAuth from '../hooks/useAuth.js'
 import { fetchConversation, fetchConversations } from '../services/api.js'
 import { getStoredProfileImage, PROFILE_IMAGE_EVENT } from '../utils/profileImageStorage.js'
@@ -143,7 +144,7 @@ function getInitials(user) {
     .join('') || 'PM'
 }
 
-function getBackendProfileImage(user) {
+function getProfileImageFromUser(user) {
   return user?.profile_picture_url ?? user?.profilePictureUrl ?? ''
 }
 function NavigationLinks({ hasUnreadMessages = false, navigation, onNavigate }) {
@@ -182,7 +183,7 @@ function MainLayout({ children }) {
   const activeOption = interfaceOptions[resolvedInterface] ?? interfaceOptions.customer
   const navigation = currentUser ? getNavigationForInterface(resolvedInterface, currentUser) : publicNavigation
   const profileMenu = navigation
-  const avatarImage = localProfileImage || getBackendProfileImage(currentUser)
+  const avatarImage = localProfileImage || getProfileImageFromUser(currentUser)
   const avatarInitials = getInitials(currentUser)
 
   useEffect(() => {
@@ -284,17 +285,15 @@ function MainLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#eee7ff] text-slate-950">
       <header className="sticky top-0 z-30 border-b border-black/10 bg-[#fbfbff]">
-        <div className="mx-auto grid max-w-7xl grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3 md:px-8">
-          <NavLink className="flex h-12 w-16 flex-col items-center justify-center text-[10px] font-bold leading-tight text-[#6c5ce7]" to="/">
-            <span className="text-sm leading-none">PM</span>
-            <span>Purrfect</span>
-            <span className="text-[#ff7bac]">Match</span>
+        <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 md:px-8">
+          <NavLink className="relative z-10 flex h-24 w-44 items-center justify-start sm:h-28 sm:w-52" to="/" aria-label="Purrfect Match home">
+            <img alt="Purrfect Match" className="h-24 w-auto object-contain sm:h-28" src={logoImage} />
           </NavLink>
-          <NavLink className="justify-self-center text-center text-xl font-medium leading-tight" to="/">
+          <NavLink className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-xl font-medium leading-tight" to="/">
             <span className="block text-[#5c63ff]">Purrfect</span>
             <span className="block text-[#ff7bac]">Match</span>
           </NavLink>
-          <div className="flex items-center gap-2 justify-self-end">
+          <div className="relative z-10 flex items-center gap-2">
             {currentUser ? (
               <div className="relative">
                 <button

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../ActionButton.jsx'
 import breederIcon from '../../assets/icon/breeder-icon.png'
 import customerIcon from '../../assets/icon/customer-icon.png'
@@ -39,8 +39,18 @@ function getPersonName(person, fallback = '') {
     || fallback
 }
 
-function getAvatarSource(person, role) {
-  return getStoredProfileImage(person)
+function isSameUser(person, currentUser) {
+  const personUser = person?.user ?? person
+  return Boolean(currentUser && (
+    Number(personUser?.id) === Number(currentUser.id)
+    || (personUser?.email && personUser.email === currentUser.email)
+  ))
+}
+
+function getAvatarSource(person, role, currentUser) {
+  const localImage = isSameUser(person, currentUser) ? getStoredProfileImage(currentUser) : ''
+
+  return localImage
     || person?.profile_picture_url
     || person?.profilePictureUrl
     || person?.avatar_url
@@ -48,6 +58,46 @@ function getAvatarSource(person, role) {
     || person?.user?.profilePictureUrl
     || person?.user?.avatar_url
     || (role === 'breeder' ? breederIcon : customerIcon)
+}
+
+function getParticipant(conversation, role) {
+  if (role === 'customer') {
+    return {
+      label: getPersonName(conversation.customer, conversation.customer_id ? `Customer #${conversation.customer_id}` : 'Customer'),
+      person: conversation.customer,
+      role: 'customer',
+    }
+  }
+
+  return {
+    label: getPersonName(conversation.breeder, conversation.breeder_id ? `Breeder #${conversation.breeder_id}` : 'Breeder'),
+    person: conversation.breeder?.user ?? conversation.breeder,
+    role: 'breeder',
+  }
+}
+
+function getConversationAvatarTarget(conversation) {
+  if (!conversation) {
+    return { label: 'Participant', person: null, role: 'customer' }
+  }
+
+  if (conversation.activeRole === 'breeder') {
+    return getParticipant(conversation, 'customer')
+  }
+
+  if (conversation.activeRole === 'customer') {
+    return getParticipant(conversation, 'breeder')
+  }
+
+  if (conversation.lastMessageSenderId && Number(conversation.lastMessageSenderId) === Number(conversation.customer?.id)) {
+    return getParticipant(conversation, 'customer')
+  }
+
+  if (conversation.lastMessageSenderId && Number(conversation.lastMessageSenderId) === Number(conversation.breeder?.user?.id)) {
+    return getParticipant(conversation, 'breeder')
+  }
+
+  return conversation.customer ? getParticipant(conversation, 'customer') : getParticipant(conversation, 'breeder')
 }
 
 function getMessageSender(conversation, message, currentUser) {
@@ -66,11 +116,24 @@ function getMessageSender(conversation, message, currentUser) {
   return null
 }
 
-function buildConversationTitle(conversation, activeRole) {
-  const listingTitle = conversation.listing_title || conversation.listing?.title || ''
+function getPerspectiveParticipantName(conversation, activeRole) {
   const customerName = getPersonName(conversation.customer, conversation.customer_id ? `Customer #${conversation.customer_id}` : '')
   const breederName = getPersonName(conversation.breeder, conversation.breeder_id ? `Breeder #${conversation.breeder_id}` : '')
-  const participantName = activeRole === 'breeder' ? customerName : breederName || customerName
+
+  if (activeRole === 'breeder') {
+    return customerName
+  }
+
+  if (activeRole === 'admin') {
+    return [customerName, breederName].filter(Boolean).join(' / ')
+  }
+
+  return breederName || customerName
+}
+
+function buildConversationTitle(conversation, activeRole) {
+  const listingTitle = conversation.listing_title || conversation.listing?.title || ''
+  const participantName = getPerspectiveParticipantName(conversation, activeRole)
 
   if (listingTitle && participantName) {
     return `${listingTitle} - ${participantName}`
@@ -105,8 +168,8 @@ export function NotificationBadge({ show }) {
   return <span className="inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" aria-label="Unread messages" />
 }
 
-export function MessageAvatar({ person, role = 'customer', label = 'Profile' }) {
-  const source = getAvatarSource(person, role)
+export function MessageAvatar({ currentUser, person, role = 'customer', label = 'Profile' }) {
+  const source = getAvatarSource(person, role, currentUser)
   const initials = getInitials(getPersonName(person, label))
 
   return (
@@ -134,8 +197,7 @@ export function ConversationList({ activeConversation, conversations, currentUse
         {!isLoading && conversations.length === 0 ? <p className="rounded-lg bg-[#f8f7fb] p-4 text-sm text-slate-500">No conversations match your search.</p> : null}
         {conversations.map((conversation) => {
           const unread = hasUnread(conversation, currentUser)
-          const role = conversation.activeRole === 'breeder' ? 'customer' : 'breeder'
-          const person = conversation.activeRole === 'breeder' ? conversation.customer : conversation.breeder?.user ?? conversation.breeder
+          const avatarTarget = getConversationAvatarTarget(conversation)
 
           return (
             <button
@@ -144,7 +206,7 @@ export function ConversationList({ activeConversation, conversations, currentUse
               onClick={() => onSelect(conversation)}
               type="button"
             >
-              <MessageAvatar label={conversation.participantName} person={person} role={role} />
+              <MessageAvatar currentUser={currentUser} label={avatarTarget.label} person={avatarTarget.person} role={avatarTarget.role} />
               <span className="min-w-0">
                 <span className="flex items-center gap-2 font-semibold text-slate-950">
                   <span className="truncate">{conversation.displayTitle}</span>
@@ -162,13 +224,12 @@ export function ConversationList({ activeConversation, conversations, currentUse
 }
 
 export function MessageThread({ activeConversation, currentUser, messages, notice }) {
-  const person = activeConversation?.activeRole === 'breeder' ? activeConversation?.customer : activeConversation?.breeder?.user ?? activeConversation?.breeder
-  const role = activeConversation?.activeRole === 'breeder' ? 'customer' : 'breeder'
+  const avatarTarget = getConversationAvatarTarget(activeConversation)
 
   return (
     <div className="flex min-h-[36rem] flex-col bg-white/95">
       <header className="flex items-center gap-3 border-b border-black/10 p-4">
-        {activeConversation ? <MessageAvatar label={activeConversation.participantName} person={person} role={role} /> : null}
+        {activeConversation ? <MessageAvatar currentUser={currentUser} label={avatarTarget.label} person={avatarTarget.person} role={avatarTarget.role} /> : null}
         <div className="min-w-0">
           <h2 className="truncate text-lg font-bold text-slate-950">{activeConversation?.displayTitle ?? 'Messages'}</h2>
           <p className="text-xs text-slate-500">{activeConversation ? 'Conversation' : 'Select a conversation'}</p>
@@ -185,7 +246,7 @@ export function MessageThread({ activeConversation, currentUser, messages, notic
 
           return (
             <div className={`flex gap-3 ${isMine ? 'justify-end' : 'justify-start'}`} key={message.id}>
-              {!isMine ? <MessageAvatar label={getPersonName(sender, 'Participant')} person={sender} role={senderRole} /> : null}
+              {!isMine ? <MessageAvatar currentUser={currentUser} label={getPersonName(sender, 'Participant')} person={sender} role={senderRole} /> : null}
               <div className={`max-w-xs rounded-2xl px-4 py-3 shadow-sm ${isMine ? 'bg-[#6c5ce7] text-white' : 'bg-white text-slate-800'}`}>
                 <p className="whitespace-pre-line">{message.content}</p>
                 <p className={`mt-2 text-[10px] ${isMine ? 'text-white/70' : 'text-slate-400'}`}>{formatDateTime(message.created_at)}</p>
@@ -230,7 +291,7 @@ function matchesSearch(conversation, query) {
   ].filter(Boolean).some((item) => String(item).toLowerCase().includes(value))
 }
 
-async function enrichConversation(conversation, activeRole, currentUser) {
+async function enrichConversation(conversation, currentUser) {
   const [detailResult, breederResult, customerResult] = await Promise.allSettled([
     fetchConversation(conversation.id),
     conversation.breeder_id ? fetchPublicBreederProfile(conversation.breeder_id) : Promise.resolve(null),
@@ -240,25 +301,29 @@ async function enrichConversation(conversation, activeRole, currentUser) {
   const breeder = breederResult.status === 'fulfilled' ? breederResult.value?.breeder_profile : null
   const customer = customerResult.status === 'fulfilled' ? customerResult.value?.user : null
   const messages = detail?.messages ?? conversation.messages ?? []
-  const lastMessage = messages[messages.length - 1]?.content ?? ''
+  const lastMessageItem = messages[messages.length - 1]
+  const lastMessage = lastMessageItem?.content ?? ''
   const enriched = {
     ...conversation,
     ...detail,
-    activeRole,
     breeder,
     customer,
     lastMessage,
+    lastMessageSenderId: lastMessageItem?.sender_id ?? null,
     messages,
   }
-  const participantName = activeRole === 'breeder'
-    ? getPersonName(customer, conversation.customer_id ? `Customer #${conversation.customer_id}` : '')
-    : getPersonName(breeder, conversation.breeder_id ? `Breeder #${conversation.breeder_id}` : '')
-
   return {
     ...enriched,
-    displayTitle: buildConversationTitle(enriched, activeRole),
-    participantName,
     unread: hasUnread(enriched, currentUser),
+  }
+}
+
+function applyConversationPerspective(conversation, activeRole) {
+  return {
+    ...conversation,
+    activeRole,
+    displayTitle: buildConversationTitle(conversation, activeRole),
+    participantName: getPerspectiveParticipantName(conversation, activeRole),
   }
 }
 
@@ -282,14 +347,15 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
   const [notice, setNotice] = useState('')
   const [query, setQuery] = useState('')
   const activeRole = getActiveRole(currentUser, preferredRole)
-  const filteredConversations = conversations.filter((conversation) => matchesSearch(conversation, query))
+  const visibleConversations = useMemo(() => conversations.map((conversation) => applyConversationPerspective(conversation, activeRole)), [activeRole, conversations])
+  const filteredConversations = visibleConversations.filter((conversation) => matchesSearch(conversation, query))
 
   useEffect(() => {
     let ignore = false
 
     async function loadConversations() {
       if (!currentUser?.token) {
-        setNotice('Sign in with a backend account to load conversations.')
+        setNotice('Sign in to load conversations.')
         setIsLoading(false)
         return
       }
@@ -298,16 +364,15 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
       try {
         const data = await fetchConversations()
         const rawConversations = data.conversations ?? []
-        const enrichedConversations = await Promise.all(rawConversations.map((conversation) => enrichConversation(conversation, activeRole, currentUser)))
+        const enrichedConversations = await Promise.all(rawConversations.map((conversation) => enrichConversation(conversation, currentUser)))
         if (!ignore) {
           setConversations(enrichedConversations)
-          setActiveConversation(enrichedConversations[0] ?? null)
-          setNotice(enrichedConversations.length ? '' : adminMode ? 'No admin messaging endpoint is available yet. Customer and breeder conversations remain available through their interfaces.' : 'No conversations yet.')
+          setNotice(enrichedConversations.length ? '' : adminMode ? 'Admin messages are not available yet.' : 'No conversations yet.')
           publishUnreadState(enrichedConversations, currentUser)
         }
       } catch (error) {
         if (!ignore) {
-          setNotice(adminMode ? 'No admin messaging endpoint is available yet. Customer and breeder conversations remain available through their interfaces.' : error.response?.data?.error?.message ?? 'Conversations could not be loaded.')
+          setNotice(adminMode ? 'Admin messages are not available yet.' : error.response?.data?.error?.message ?? 'Conversations could not be loaded.')
           setConversations([])
           publishUnreadState([], currentUser)
         }
@@ -323,8 +388,21 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
     return () => {
       ignore = true
     }
-  }, [activeRole, adminMode, currentUser])
+  }, [adminMode, currentUser])
 
+  useEffect(() => {
+    setActiveConversation((currentConversation) => {
+      if (!visibleConversations.length) {
+        return null
+      }
+
+      if (!currentConversation) {
+        return visibleConversations[0]
+      }
+
+      return visibleConversations.find((conversation) => conversation.id === currentConversation.id) ?? visibleConversations[0]
+    })
+  }, [visibleConversations])
   useEffect(() => {
     let ignore = false
 

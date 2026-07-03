@@ -101,7 +101,7 @@ export function normalizeListing(listing) {
     breeder: getBreederName(listing.breeder),
     breederId: listing.breeder_id ?? breederProfile?.id ?? null,
     breederOwnerName: breederProfile?.owner_name ?? breederProfile?.user?.display_name ?? '',
-    breederPhoto: breederProfile?.profile_picture_url ?? breederProfile?.user?.profile_picture_url ?? null,
+    breederPhoto: breederProfile?.profile_picture_url ?? breederProfile?.profilePictureUrl ?? breederProfile?.avatar_url ?? breederProfile?.user?.profile_picture_url ?? breederProfile?.user?.profilePictureUrl ?? breederProfile?.user?.avatar_url ?? null,
     breederProfile,
     gender: normalizeGender(listing.gender),
     id: listing.id,

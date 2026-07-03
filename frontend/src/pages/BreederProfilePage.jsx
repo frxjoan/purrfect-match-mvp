@@ -107,7 +107,6 @@ function BreederProfilePage() {
     setIsSaving(true)
 
     try {
-      // TODO: Replace local data URL persistence with backend binary upload when an upload endpoint exists.
       const [accountData, breederData] = await Promise.all([
         updateCurrentUserProfile({
           first_name: accountProfile.firstName.trim(),

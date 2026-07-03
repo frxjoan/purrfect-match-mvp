@@ -84,7 +84,6 @@ function CustomerProfilePage() {
     setIsSaving(true)
 
     try {
-      // TODO: Replace local data URL persistence with backend binary upload when an upload endpoint exists.
       const data = await updateCurrentUserProfile({
         first_name: profile.firstName.trim(),
         last_name: profile.lastName.trim(),

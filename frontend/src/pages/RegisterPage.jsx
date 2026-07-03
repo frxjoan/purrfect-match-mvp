@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import { registerUser } from '../services/api.js'
@@ -68,7 +68,7 @@ function RegisterPage() {
       setNotice('Account created. You can now sign in.')
       setForm(emptyForm)
     } catch (error) {
-      setNotice(error.response?.data?.error?.message ?? 'Registration failed. Check that the backend is running.')
+      setNotice(error.response?.data?.error?.message ?? 'Registration failed. Please try again.')
     } finally {
       setIsSubmitting(false)
     }

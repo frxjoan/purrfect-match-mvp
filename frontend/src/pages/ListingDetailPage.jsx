@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import breederIcon from '../assets/icon/breeder-icon.png'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListingById, startConversation } from '../services/api.js'
+import { getStoredProfileImage } from '../utils/profileImageStorage.js'
 
 function ListingDetailPage() {
   const { currentUser } = useAuth()
@@ -113,6 +115,10 @@ function ListingDetailPage() {
   }
 
   const activeImage = listingImages[activeImageIndex]
+  const breederUser = listing.breederProfile?.user
+  const localBreederPhoto = Number(currentUser?.id) === Number(listing.breederProfile?.user_id) ? getStoredProfileImage(currentUser) : ''
+  const breederAvatar = listing.breederPhoto || breederUser?.profile_picture_url || breederUser?.profilePictureUrl || breederUser?.avatar_url || localBreederPhoto || breederIcon
+  const breederInitials = (listing.breeder || 'PM').slice(0, 2).toUpperCase()
 
   return (
     <>
@@ -140,7 +146,7 @@ function ListingDetailPage() {
               {listing.breederId ? (
                 <Link className="mt-2 flex items-center gap-3 rounded-xl border border-black bg-white p-3 hover:bg-[#f7f3ff]" to={`/breeders/${listing.breederId}`}>
                   <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-300 bg-[#f8f7fb] text-xs font-semibold text-[#6c5ce7]">
-                    {listing.breederPhoto ? <img alt="" className="h-full w-full object-cover" src={listing.breederPhoto} /> : (listing.breeder || 'PM').slice(0, 2).toUpperCase()}
+                    {breederAvatar ? <img alt="" className="h-full w-full object-cover" src={breederAvatar} /> : breederInitials}
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate font-semibold text-slate-950">{listing.breeder || 'Breeder profile'}</span>
@@ -151,6 +157,7 @@ function ListingDetailPage() {
             </div>
             <div className="rounded-xl border border-black bg-white p-3">
               <p>{listing.breed}</p>
+              {listing.gender ? <p>{listing.gender}</p> : null}
               <p>{listing.location}</p>
               {listing.age ? <p>{listing.age}</p> : null}
               <p className="mt-2 font-semibold">{listing.price.toLocaleString()} EUR</p>

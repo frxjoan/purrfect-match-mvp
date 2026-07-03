@@ -40,7 +40,6 @@ function CustomerReviewsPage() {
       setNotice('')
 
       try {
-        // TODO: Replace this MVP discovery pass with GET /api/v1/reviews/me when the backend exposes it.
         const listingData = await fetchListings()
         const breederSummaries = new Map()
 

@@ -107,7 +107,7 @@ function LoginPage() {
       signIn(user)
       navigate('/', { replace: true })
     } catch (error) {
-      setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your backend account credentials.')
+      setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your credentials.')
     } finally {
       setIsSubmitting(false)
     }
