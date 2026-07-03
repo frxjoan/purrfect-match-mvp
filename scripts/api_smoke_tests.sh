@@ -29,6 +29,7 @@ CUSTOMER_EMAIL="customer-${SUFFIX}@smoke.test"
 BREEDER_EMAIL="breeder-${SUFFIX}@smoke.test"
 UNVERIFIED_EMAIL="unverified-${SUFFIX}@smoke.test"
 OTHER_EMAIL="other-${SUFFIX}@smoke.test"
+ADMIN_EMAIL="admin-${SUFFIX}@smoke.test"
 PASSWORD="password123"
 
 pass() {
@@ -256,6 +257,7 @@ pass "customer login"
 
 register_user "${BREEDER_EMAIL}" "Breeder"
 BREEDER_TOKEN="$(login_user "${BREEDER_EMAIL}")"
+BREEDER_USER_ID="$(user_id_for_email "${BREEDER_EMAIL}")"
 pass "breeder login"
 
 register_user "${UNVERIFIED_EMAIL}" "Unverified"
@@ -265,7 +267,14 @@ pass "created pending breeder profile ${UNVERIFIED_BREEDER_ID}"
 
 register_user "${OTHER_EMAIL}" "Other"
 OTHER_TOKEN="$(login_user "${OTHER_EMAIL}")"
+OTHER_USER_ID="$(user_id_for_email "${OTHER_EMAIL}")"
 pass "third user login"
+
+register_user "${ADMIN_EMAIL}" "Admin"
+ADMIN_TOKEN="$(login_user "${ADMIN_EMAIL}")"
+ADMIN_ID="$(user_id_for_email "${ADMIN_EMAIL}")"
+psql_value "UPDATE users SET role = 'admin' WHERE id = ${ADMIN_ID};" >/dev/null
+pass "admin user setup"
 
 request POST "${API}/breeders/apply" \
   -H "Authorization: Bearer ${BREEDER_TOKEN}" \
@@ -309,6 +318,57 @@ assert_get_success "${API}/listings?max_price=2000"
 assert_get_success "${API}/listings?gender=female"
 assert_get_success "${API}/listings?age_max=12"
 pass "listing list and filters"
+
+request POST "${API}/listings/${LISTING_ID}/reports" \
+  -H "Authorization: Bearer ${CUSTOMER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "not_a_reason"}'
+assert_status 400
+assert_success_false
+pass "invalid listing report reason rejected"
+
+request POST "${API}/listings/${LISTING_ID}/reports" \
+  -H "Authorization: Bearer ${BREEDER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "suspected_scam"}'
+assert_status 403
+assert_success_false
+pass "listing owner cannot report own listing"
+
+request POST "${API}/listings/${LISTING_ID}/reports" \
+  -H "Authorization: Bearer ${CUSTOMER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "misleading_information", "comment": "Smoke report for moderation."}'
+assert_status 201
+assert_success_true
+REPORT_ID="$(json_get "data.report.id")"
+pass "customer reported listing ${REPORT_ID}"
+
+request POST "${API}/listings/${LISTING_ID}/reports" \
+  -H "Authorization: Bearer ${CUSTOMER_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "duplicate_listing"}'
+assert_status 409
+assert_success_false
+pass "duplicate listing report rejected"
+
+request GET "${API}/admin/reports" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}"
+assert_status 200
+assert_success_true
+
+request GET "${API}/admin/reports/${REPORT_ID}" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}"
+assert_status 200
+assert_success_true
+
+request PATCH "${API}/admin/reports/${REPORT_ID}" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"decision": "accepted", "admin_comment": "Smoke moderation accepted."}'
+assert_status 200
+assert_success_true
+pass "admin moderated listing report"
 
 request POST "${API}/conversations" \
   -H "Authorization: Bearer ${CUSTOMER_TOKEN}" \
@@ -428,5 +488,59 @@ request DELETE "${API}/reviews/${REVIEW_ID}" \
 assert_status 200
 assert_success_true
 pass "customer deleted review"
+
+SUSPENSION_EXPIRES_AT="$(python3 -c 'from datetime import datetime, timedelta, timezone; print((datetime.now(timezone.utc) + timedelta(days=1)).isoformat())')"
+
+request POST "${API}/admin/users/${OTHER_USER_ID}/restrictions" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"restriction_type\": \"suspension\",
+    \"reason\": \"Smoke test temporary suspension.\",
+    \"expires_at\": \"${SUSPENSION_EXPIRES_AT}\"
+  }"
+assert_status 201
+assert_success_true
+pass "admin suspended user"
+
+request POST "${API}/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"email\": \"${OTHER_EMAIL}\",
+    \"password\": \"${PASSWORD}\"
+  }"
+assert_status 403
+assert_success_false
+pass "suspended user login rejected"
+
+request DELETE "${API}/admin/users/${OTHER_USER_ID}/restrictions" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}"
+assert_status 200
+assert_success_true
+pass "admin lifted suspension"
+
+OTHER_TOKEN="$(login_user "${OTHER_EMAIL}")"
+pass "lifted user can login again"
+
+request POST "${API}/admin/users/${BREEDER_USER_ID}/restrictions" \
+  -H "Authorization: Bearer ${ADMIN_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "restriction_type": "ban",
+    "reason": "Smoke test ban after accepted listing report."
+  }'
+assert_status 201
+assert_success_true
+pass "admin banned breeder and archived active listings"
+
+request POST "${API}/auth/login" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"email\": \"${BREEDER_EMAIL}\",
+    \"password\": \"${PASSWORD}\"
+  }"
+assert_status 403
+assert_success_false
+pass "banned breeder login rejected"
 
 echo "PASS: API smoke tests completed"

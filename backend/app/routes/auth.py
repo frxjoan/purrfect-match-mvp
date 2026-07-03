@@ -1,10 +1,39 @@
+from datetime import datetime, timezone
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 
 from app.extensions import db
+from app.models.account_restriction import AccountRestriction
 from app.models.user import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
+
+
+def now_utc():
+    return datetime.now(timezone.utc)
+
+
+def as_aware_utc(value):
+    if value and value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value
+
+
+def get_active_email_restriction(email):
+    restriction = AccountRestriction.query.filter_by(email=email).first()
+
+    if restriction and restriction.is_active():
+        return restriction
+
+    return None
+
+
+def moderation_error(message):
+    return jsonify({
+        "success": False,
+        "error": {"message": message},
+    }), 403
 
 
 @auth_bp.get("")
@@ -51,6 +80,13 @@ def register():
                 "message": "An account with this email already exists.",
             },
         }), 409
+
+    active_restriction = get_active_email_restriction(email)
+    if active_restriction:
+        if active_restriction.restriction_type == "ban":
+            return moderation_error("This email address is banned.")
+
+        return moderation_error("This email address is currently suspended.")
 
     user = User(
         email=email,
@@ -100,6 +136,20 @@ def login():
                 "message": "Invalid email or password.",
             },
         }), 401
+
+    if user.status == "banned":
+        return moderation_error("This account is banned.")
+
+    if user.status == "suspended":
+        suspended_until = as_aware_utc(user.suspended_until)
+
+        if not suspended_until or suspended_until > now_utc():
+            return moderation_error("This account is currently suspended.")
+
+        user.status = "active"
+        user.suspended_until = None
+        user.moderation_reason = None
+        db.session.commit()
 
     access_token = create_access_token(identity=str(user.id))
 

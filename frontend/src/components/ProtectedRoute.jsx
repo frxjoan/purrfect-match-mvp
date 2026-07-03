@@ -1,0 +1,36 @@
+import { Navigate, useLocation } from 'react-router-dom'
+import { getRoleDashboard } from '../context/AuthContext.jsx'
+import useAuth from '../hooks/useAuth.js'
+
+const roleAccess = {
+  customer: ['customer', 'breeder', 'admin'],
+  breeder: ['breeder', 'admin'],
+  admin: ['admin'],
+}
+
+function ProtectedRoute({ allowedRole = 'customer', children }) {
+  const { currentUser } = useAuth()
+  const location = useLocation()
+
+  if (!currentUser) {
+    return <Navigate replace state={{ from: location.pathname }} to="/login" />
+  }
+
+  const allowedRoles = roleAccess[allowedRole] ?? roleAccess.customer
+
+  if (!allowedRoles.includes(currentUser.role)) {
+    return (
+      <Navigate
+        replace
+        state={{
+          attempted: location.pathname,
+          dashboard: getRoleDashboard(currentUser.role),
+        }}
+        to="/unauthorized"
+      />
+    )
+  }
+  return children
+}
+
+export default ProtectedRoute
