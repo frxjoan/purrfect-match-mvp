@@ -60,6 +60,16 @@ def register():
 
     email = data["email"].strip().lower()
     password = data["password"]
+    role = str(data.get("role", "customer")).strip().lower()
+
+    if role not in {"customer", "breeder"}:
+        return jsonify({
+            "success": False,
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Role must be customer or breeder.",
+            },
+        }), 400
 
     if len(password) < 8:
         return jsonify({
@@ -92,7 +102,7 @@ def register():
         email=email,
         first_name=data["first_name"].strip(),
         last_name=data["last_name"].strip(),
-        role="customer",
+        role=role,
         phone_number=data.get("phone_number"),
         location=data.get("location"),
     )

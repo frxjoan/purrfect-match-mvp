@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import customerIcon from '../assets/icon/customer-icon.png'
 import logoImage from '../../assets/logo/logo-purrfect-match.png'
+import { getBreederVerificationStatus } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchConversation, fetchConversations } from '../services/api.js'
 import { getStoredProfileImage, PROFILE_IMAGE_EVENT } from '../utils/profileImageStorage.js'
@@ -45,10 +46,9 @@ const roleNavigation = {
   ],
 }
 
-
 const interfaceOptions = {
   customer: {
-    dashboard: '/customer/dashboard',
+    dashboard: '/',
     icon: customerIcon,
     label: 'Customer',
     value: 'customer',
@@ -88,14 +88,12 @@ function persistInterface(value) {
   }
 }
 
-function getBreederStatus(user) {
-  return String(
-    user?.breederVerificationStatus
-      ?? user?.breeder_profile?.certification_status
-      ?? user?.breederProfile?.certification_status
-      ?? user?.certification_status
-      ?? 'unverified',
-  ).toLowerCase()
+function getInterfaceDashboard(option, user) {
+  if (option.value === 'breeder' && user?.role === 'breeder' && getBreederVerificationStatus(user) !== 'verified') {
+    return '/breeder/certification'
+  }
+
+  return option.dashboard
 }
 
 function getAllowedInterfaces(user) {
@@ -107,7 +105,7 @@ function getAllowedInterfaces(user) {
     return [interfaceOptions.customer, interfaceOptions.breeder, interfaceOptions.admin]
   }
 
-  if (user.role === 'breeder' && getBreederStatus(user) === 'verified') {
+  if (user.role === 'breeder') {
     return [interfaceOptions.customer, interfaceOptions.breeder]
   }
 
@@ -119,7 +117,7 @@ function getDefaultInterface(user) {
     return 'admin'
   }
 
-  if (user?.role === 'breeder' && getBreederStatus(user) === 'verified') {
+  if (user?.role === 'breeder') {
     return 'breeder'
   }
 
@@ -129,6 +127,14 @@ function getDefaultInterface(user) {
 function getNavigationForInterface(activeInterface, user) {
   if (!user) {
     return publicNavigation
+  }
+
+  if (activeInterface === 'breeder' && user.role === 'breeder' && getBreederVerificationStatus(user) !== 'verified') {
+    return [
+      { to: '/', label: 'Home' },
+      { to: '/breeder/certification', label: 'Certification' },
+      { to: '/breeder/profile', label: 'Profile' },
+    ]
   }
 
   return roleNavigation[activeInterface] ?? roleNavigation.customer
@@ -279,7 +285,7 @@ function MainLayout({ children }) {
     persistInterface(option.value)
     setIsRoleMenuOpen(false)
     setIsProfileMenuOpen(false)
-    navigate(option.dashboard)
+    navigate(getInterfaceDashboard(option, currentUser))
   }
 
   return (

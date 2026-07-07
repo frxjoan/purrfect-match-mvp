@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import { getPostLoginRedirect } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { loginUser } from '../services/api.js'
 
@@ -22,7 +23,7 @@ function LoginPage() {
   const [notice, setNotice] = useState('')
   useEffect(() => {
     if (currentUser) {
-      navigate('/', { replace: true })
+      navigate(getPostLoginRedirect(currentUser), { replace: true })
     }
   }, [currentUser, navigate])
 
@@ -95,7 +96,7 @@ function LoginPage() {
       })
       const user = {
         ...data.user,
-        breederVerificationStatus: data.user?.breeder_profile?.certification_status,
+        breederVerificationStatus: data.user?.breeder_certification_status ?? data.user?.breeder_profile?.certification_status,
         token: data.token,
       }
 
@@ -105,7 +106,7 @@ function LoginPage() {
       }
 
       signIn(user)
-      navigate('/', { replace: true })
+      navigate(getPostLoginRedirect(user), { replace: true })
     } catch (error) {
       setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your credentials.')
     } finally {
@@ -164,4 +165,3 @@ function LoginPage() {
 }
 
 export default LoginPage
-

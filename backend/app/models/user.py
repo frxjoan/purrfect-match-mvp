@@ -99,6 +99,15 @@ class User(db.Model):
     def normalize_email(self):
         self.email = self.email.strip().lower()
 
+    def get_breeder_certification_status(self):
+        if self.role != "breeder":
+            return None
+
+        if self.breeder_profile:
+            return self.breeder_profile.certification_status
+
+        return "unverified"
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -116,6 +125,7 @@ class User(db.Model):
             "phone_number": self.phone_number,
             "location": self.location,
             "profile_picture_url": self.profile_picture_url,
+            "breeder_certification_status": self.get_breeder_certification_status(),
             "breeder_profile": (
                 self.breeder_profile.to_dict()
                 if self.breeder_profile
