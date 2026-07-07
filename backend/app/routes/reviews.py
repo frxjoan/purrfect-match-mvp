@@ -42,6 +42,19 @@ def ensure_review_author(user, review):
     return None
 
 
+def ensure_review_author_or_admin(user, review):
+    if user.is_admin() or review.reviewer_id == user.id:
+        return None
+
+    return (
+        jsonify({
+            "success": False,
+            "error": {"message": "Unauthorized to modify this review."},
+        }),
+        403,
+    )
+
+
 @reviews_bp.patch("/<int:review_id>")
 @jwt_required()
 def update_review(review_id):
@@ -105,7 +118,7 @@ def delete_review(review_id):
     if error_response:
         return error_response
 
-    author_error = ensure_review_author(user, review)
+    author_error = ensure_review_author_or_admin(user, review)
     if author_error:
         return author_error
 

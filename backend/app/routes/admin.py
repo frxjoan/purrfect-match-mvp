@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.extensions import db
 from app.models.account_restriction import AccountRestriction, RESTRICTION_TYPES

@@ -19,6 +19,7 @@ function CustomerSavedListingsPage() {
   const [loadError, setLoadError] = useState('')
   const [reportListing, setReportListing] = useState(null)
   const [savedListingIds, setSavedListingIds] = useState([])
+  const isAdminPreview = currentUser?.role === 'admin'
 
   useEffect(() => {
     let isActive = true
@@ -26,6 +27,16 @@ function CustomerSavedListingsPage() {
     async function loadSavedListings() {
       setIsLoading(true)
       setLoadError('')
+
+      if (isAdminPreview) {
+        if (isActive) {
+          setListings([])
+          setSavedListingIds([])
+          setLoadError('Saved listings are attached to customer accounts. Admin preview can browse listings without saved items.')
+          setIsLoading(false)
+        }
+        return
+      }
 
       try {
         const result = await fetchSavedListings()
@@ -52,7 +63,7 @@ function CustomerSavedListingsPage() {
     return () => {
       isActive = false
     }
-  }, [])
+  }, [isAdminPreview])
 
   const savedListings = useMemo(
     () => applyListingFilters(listings, query, filters),
@@ -60,6 +71,10 @@ function CustomerSavedListingsPage() {
   )
 
   async function removeSavedListing(listingId) {
+    if (isAdminPreview) {
+      return
+    }
+
     try {
       const result = await unsaveListing(listingId)
       setListings(result.listings)
