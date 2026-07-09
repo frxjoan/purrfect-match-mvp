@@ -54,7 +54,6 @@ const roleNavigation = {
   ],
 }
 
-<<<<<<< HEAD
 
 const interfaceOptions = {
   customer: {
@@ -157,16 +156,14 @@ function getInitials(user) {
 function getProfileImageFromUser(user) {
   return user?.profile_picture_url ?? user?.profilePictureUrl ?? ''
 }
-function NavigationLinks({ hasUnreadMessages = false, navigation, onNavigate }) {
-=======
+
 /**
  * Renders a group of NavLink buttons and closes the active menu after click.
  *
- * @param {{ navigation: { to: string, label: string }[], onNavigate?: Function }} props - Navigation render props.
+ * @param {{ hasUnreadMessages?: boolean, navigation: { to: string, label: string }[], onNavigate?: Function }} props - Navigation render props.
  * @returns {JSX.Element[]} Menu links.
  */
-function NavigationLinks({ navigation, onNavigate }) {
->>>>>>> doc
+function NavigationLinks({ hasUnreadMessages = false, navigation, onNavigate }) {
   return navigation.map((item) => (
     <NavLink
       key={item.to}

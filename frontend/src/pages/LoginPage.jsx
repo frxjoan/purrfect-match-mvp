@@ -214,9 +214,4 @@ function LoginPage() {
   )
 }
 
-<<<<<<< HEAD
 export default LoginPage
-
-=======
-export default LoginPage
->>>>>>> doc
