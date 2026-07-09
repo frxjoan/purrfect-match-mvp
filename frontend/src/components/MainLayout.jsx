@@ -9,6 +9,9 @@ import { getStoredProfileImage, PROFILE_IMAGE_EVENT } from '../utils/profileImag
 
 const ACTIVE_INTERFACE_STORAGE_KEY = 'purrfect-match-active-interface'
 
+/**
+ * Navigation displayed when there is no authenticated user.
+ */
 const publicNavigation = [
   { to: '/', label: 'Home' },
   { to: '/customer/listings', label: 'Listings' },
@@ -16,6 +19,12 @@ const publicNavigation = [
   { to: '/register', label: 'Register' },
 ]
 
+/**
+ * Navigation displayed after login, keyed by the role returned by Flask.
+ *
+ * Admin receives links to every section, breeder receives breeder and customer
+ * workflows, and customer receives only customer workflows.
+ */
 const roleNavigation = {
   customer: [
     { to: '/', label: 'Home' },
@@ -45,6 +54,7 @@ const roleNavigation = {
   ],
 }
 
+<<<<<<< HEAD
 
 const interfaceOptions = {
   customer: {
@@ -148,6 +158,15 @@ function getProfileImageFromUser(user) {
   return user?.profile_picture_url ?? user?.profilePictureUrl ?? ''
 }
 function NavigationLinks({ hasUnreadMessages = false, navigation, onNavigate }) {
+=======
+/**
+ * Renders a group of NavLink buttons and closes the active menu after click.
+ *
+ * @param {{ navigation: { to: string, label: string }[], onNavigate?: Function }} props - Navigation render props.
+ * @returns {JSX.Element[]} Menu links.
+ */
+function NavigationLinks({ navigation, onNavigate }) {
+>>>>>>> doc
   return navigation.map((item) => (
     <NavLink
       key={item.to}
@@ -168,6 +187,16 @@ function NavigationLinks({ hasUnreadMessages = false, navigation, onNavigate }) 
   ))
 }
 
+/**
+ * Shared application shell used around every route.
+ *
+ * This component chooses the correct navigation menu from AuthContext, renders
+ * the profile dropdown, and performs logout by clearing the frontend session
+ * before redirecting back to Login.
+ *
+ * @param {{ children: import('react').ReactNode }} props - Active route content.
+ * @returns {JSX.Element} Page layout with header, main content, and footer.
+ */
 function MainLayout({ children }) {
   const { currentUser, signOut } = useAuth()
   const navigate = useNavigate()

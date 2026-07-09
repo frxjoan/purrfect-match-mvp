@@ -2,6 +2,16 @@ import { Link } from 'react-router-dom'
 import ActionButton from './ActionButton.jsx'
 import breederIcon from '../assets/icon/breeder-icon.png'
 
+/**
+ * Displays one normalized listing returned by the Flask listings endpoints.
+ *
+ * The card remains reusable by receiving callbacks from the parent page. Saving
+ * and reporting are optional because public pages, saved pages, and management
+ * views do not all expose the same actions.
+ *
+ * @param {{ isSaved?: boolean, listing: Object, onReport?: Function, onToggleSave?: Function }} props - Listing card props.
+ * @returns {JSX.Element} Listing card UI.
+ */
 function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
   return (
     <article className="grid min-h-28 grid-cols-[5rem_1fr_auto] gap-3 rounded-xl border border-black bg-[#fbfbff] p-3 text-xs shadow-sm">
