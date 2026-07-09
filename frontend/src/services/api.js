@@ -410,19 +410,11 @@ export async function updateCurrentUserProfile(payload) {
   return getResponseData(response)
 }
 
-<<<<<<< HEAD
-export async function fetchPublicUserProfile(userId) {
-  const response = await api.get(`/users/${userId}`)
-  return getResponseData(response)
-}
-
-=======
 /**
  * Loads the authenticated breeder profile.
  *
  * @returns {Promise<Object>} Breeder profile payload.
  */
->>>>>>> doc
 export async function fetchBreederProfile() {
   const response = await api.get('/breeders/me')
   return getResponseData(response)
@@ -498,24 +490,11 @@ export async function createBreederReview(breederId, payload) {
   return getResponseData(response)
 }
 
-<<<<<<< HEAD
-export async function updateReview(reviewId, payload) {
-  const response = await api.patch(`/reviews/${reviewId}`, payload)
-  return getResponseData(response)
-}
-
-export async function deleteReview(reviewId) {
-  const response = await api.delete(`/reviews/${reviewId}`)
-  return getResponseData(response)
-}
-
-=======
 /**
  * Loads conversations available to the authenticated user.
  *
  * @returns {Promise<Object>} Conversation collection payload.
  */
->>>>>>> doc
 export async function fetchConversations() {
   const response = await api.get('/conversations')
   return getResponseData(response)
