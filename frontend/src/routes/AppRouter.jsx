@@ -25,6 +25,16 @@ import PublicBreederProfilePage from '../pages/PublicBreederProfilePage.jsx'
 import RegisterPage from '../pages/RegisterPage.jsx'
 import UnauthorizedPage from '../pages/UnauthorizedPage.jsx'
 
+/**
+ * Declares every frontend route for the MVP.
+ *
+ * Public routes remain reachable without a JWT. Customer, breeder, and admin
+ * sections are wrapped by ProtectedRoute so route access mirrors the role
+ * hierarchy returned by Flask. Legacy shortcuts redirect to the canonical
+ * customer pages.
+ *
+ * @returns {JSX.Element} Browser router with public and protected routes.
+ */
 function AppRouter() {
   return (
     <BrowserRouter>

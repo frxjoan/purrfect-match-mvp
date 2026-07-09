@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import useAuth from '../hooks/useAuth.js'
 
+/**
+ * Navigation displayed when there is no authenticated user.
+ */
 const publicNavigation = [
   { to: '/', label: 'Home' },
   { to: '/customer/listings', label: 'Listings' },
@@ -9,6 +12,12 @@ const publicNavigation = [
   { to: '/register', label: 'Register' },
 ]
 
+/**
+ * Navigation displayed after login, keyed by the role returned by Flask.
+ *
+ * Admin receives links to every section, breeder receives breeder and customer
+ * workflows, and customer receives only customer workflows.
+ */
 const roleNavigation = {
   customer: [
     { to: '/customer/dashboard', label: 'Dashboard' },
@@ -50,6 +59,12 @@ const roleNavigation = {
   ],
 }
 
+/**
+ * Renders a group of NavLink buttons and closes the active menu after click.
+ *
+ * @param {{ navigation: { to: string, label: string }[], onNavigate?: Function }} props - Navigation render props.
+ * @returns {JSX.Element[]} Menu links.
+ */
 function NavigationLinks({ navigation, onNavigate }) {
   return navigation.map((item) => (
     <NavLink
@@ -68,6 +83,16 @@ function NavigationLinks({ navigation, onNavigate }) {
   ))
 }
 
+/**
+ * Shared application shell used around every route.
+ *
+ * This component chooses the correct navigation menu from AuthContext, renders
+ * the profile dropdown, and performs logout by clearing the frontend session
+ * before redirecting back to Login.
+ *
+ * @param {{ children: import('react').ReactNode }} props - Active route content.
+ * @returns {JSX.Element} Page layout with header, main content, and footer.
+ */
 function MainLayout({ children }) {
   const { currentUser, signOut } = useAuth()
   const navigate = useNavigate()
