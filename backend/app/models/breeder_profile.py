@@ -1,12 +1,19 @@
+"""Breeder profile model for certification and public breeder details."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 
 class BreederProfile(db.Model):
-    __tablename__ = 'breeder_profiles'
+    """Represent breeder-specific profile and certification data."""
 
-    __table_args__ = (
+    __tablename__: str = 'breeder_profiles'
+
+    __table_args__: tuple[Any, ...] = (
         db.CheckConstraint(
             "certification_status IN ('pending', 'verified', 'rejected')",
             name='ck_certification_status_valid',
@@ -50,19 +57,22 @@ class BreederProfile(db.Model):
         cascade='all, delete-orphan',
     )
 
-    def is_verified(self):
+    def is_verified(self) -> bool:
+        """Return whether the breeder profile is verified."""
         return self.certification_status == "verified"
 
-    def can_create_listing(self):
+    def can_create_listing(self) -> bool:
+        """Return whether the breeder can create listings."""
         return self.is_verified()
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         owner_name = None
         profile_picture_url = None
-        user = None
+        user: dict[str, Any] | None = None
 
         if self.user:
-            owner_name = " ".join(
+            owner_name: str | None = " ".join(
                 value for value in [self.user.first_name, self.user.last_name]
                 if value
             ) or None

@@ -1,9 +1,16 @@
+"""Conversation model linking customers, breeders, and listings."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 class Conversation(db.Model):
-    __tablename__ = 'conversations'
+    """Represent a conversation between a customer and breeder about a listing."""
+
+    __tablename__: str = 'conversations'
 
     id = db.Column(db.Integer, primary_key=True)
     customer_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
@@ -37,7 +44,8 @@ class Conversation(db.Model):
         order_by="Message.created_at.asc()",
     )
 
-    def to_dict(self, include_messages=False):
+    def to_dict(self, include_messages: bool = False) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         data = {
             "id": self.id,
             "customer_id": self.customer_id,

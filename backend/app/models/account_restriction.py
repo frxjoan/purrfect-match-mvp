@@ -1,15 +1,22 @@
+"""Account restriction model used to suspend or ban users by email."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 
-RESTRICTION_TYPES = ("suspension", "ban")
+RESTRICTION_TYPES: tuple[str, ...] = ("suspension", "ban")
 
 
 class AccountRestriction(db.Model):
-    __tablename__ = 'account_restrictions'
+    """Represent a suspension or ban attached to an email address."""
 
-    __table_args__ = (
+    __tablename__: str = 'account_restrictions'
+
+    __table_args__: tuple[Any, ...] = (
         db.CheckConstraint(
             "restriction_type IN ('suspension', 'ban')",
             name='ck_account_restrictions_type_valid',
@@ -54,7 +61,8 @@ class AccountRestriction(db.Model):
         foreign_keys=[admin_id],
     )
 
-    def is_active(self):
+    def is_active(self) -> bool:
+        """Return whether the restriction is currently active."""
         if not self.expires_at:
             return True
 
@@ -64,7 +72,8 @@ class AccountRestriction(db.Model):
 
         return expires_at > datetime.now(timezone.utc)
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         return {
             "id": self.id,
             "email": self.email,

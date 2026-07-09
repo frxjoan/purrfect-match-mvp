@@ -1,3 +1,8 @@
+"""Message API routes for read-state updates."""
+
+from typing import Any
+
+
 from flask import Blueprint, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -5,14 +10,16 @@ from app.extensions import db
 from app.models.user import User
 from app.models.message import Message
 
-messages_bp = Blueprint(
+messages_bp: Blueprint = Blueprint(
     "messages",
     __name__,
     url_prefix="/api/v1/messages",
 )
 
 
-def can_access_conversation(user, conversation):
+def can_access_conversation(user: Any, conversation: Any) -> Any:
+    """Return whether a user can access a conversation."""
+
     if conversation.customer_id == user.id:
         return True
 
@@ -24,7 +31,8 @@ def can_access_conversation(user, conversation):
 
 @messages_bp.patch("/<int:message_id>/read")
 @jwt_required()
-def mark_message_as_read(message_id):
+def mark_message_as_read(message_id: Any) -> Any:
+    """Mark an incoming message as read for the authenticated user."""
     user_id = get_jwt_identity()
     user = db.session.get(User, int(user_id))
 

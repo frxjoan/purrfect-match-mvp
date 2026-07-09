@@ -1,3 +1,8 @@
+"""Environment-driven configuration classes for Flask, SQLAlchemy, JWT, and Cloudinary."""
+
+from typing import Any
+
+
 import os
 
 from dotenv import load_dotenv
@@ -5,8 +10,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def _database_url():
-    database_url = os.getenv(
+def _database_url() -> str | None:
+    """Build the SQLAlchemy database URL from environment variables."""
+
+    database_url: str | None = os.getenv(
         'DATABASE_URL',
         'postgresql://postgres:postgres@localhost:5432/purrfect_match',
     )
@@ -18,6 +25,7 @@ def _database_url():
 
 
 class Config:
+    """Base configuration shared by all Flask environments."""
     SQLALCHEMY_DATABASE_URI = _database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', "change-me")
@@ -28,10 +36,12 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+    """Development configuration with debugging enabled."""
     DEBUG = True
 
 
 class TestingConfig(Config):
+    """Testing configuration using the test database URL."""
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "TEST_DATABASE_URL",
@@ -40,11 +50,13 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
+    """Production configuration with debugging disabled."""
     DEBUG = False
 
 
-def get_config():
-    env = os.getenv("FLASK_ENV", "development")
+def get_config() -> type[Config]:
+    """Return the configuration class for the current Flask environment."""
+    env: str = os.getenv("FLASK_ENV", "development")
 
     if env == "production":
         return ProductionConfig
