@@ -5,6 +5,8 @@ Revises: 3222339d302f
 Create Date: 2026-06-18 00:00:00.000000
 
 """
+from typing import Any
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -16,7 +18,8 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> Any:
+    """Apply this database migration."""
     op.create_table(
         'listing_reports',
         sa.Column('id', sa.Integer(), nullable=False),
@@ -70,5 +73,6 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> Any:
+    """Revert this database migration."""
     op.drop_table('listing_reports')

@@ -1,9 +1,16 @@
+"""Message model for buyer and breeder conversations."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 class Message(db.Model):
-    __tablename__ = 'messages'
+    """Represent one message sent inside a conversation."""
+
+    __tablename__: str = 'messages'
 
     id = db.Column(db.Integer, primary_key=True)
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversations.id', ondelete='CASCADE'), nullable=False)
@@ -22,7 +29,8 @@ class Message(db.Model):
         foreign_keys=[sender_id],
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         return {
             "id": self.id,
             "conversation_id": self.conversation_id,

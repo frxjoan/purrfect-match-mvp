@@ -1,3 +1,7 @@
+"""Tests for breeder review endpoints."""
+
+from typing import Any
+
 import pytest
 from flask_jwt_extended import create_access_token
 
@@ -7,7 +11,8 @@ from ..models.reviews import Review
 from ..models.user import User
 
 
-def create_user(email, role="customer"):
+def create_user(email: Any, role: Any = "customer") -> Any:
+    """Create and persist a test user."""
     user = User(
         email=email,
         first_name="Test",
@@ -19,7 +24,8 @@ def create_user(email, role="customer"):
 
 
 @pytest.fixture()
-def review_setup(app):
+def review_setup(app: Any) -> Any:
+    """Create users and breeder data for review tests."""
     with app.app_context():
         reviewer = create_user("reviewer@test.com")
         owner = create_user("owner@test.com", role="breeder")
@@ -51,11 +57,13 @@ def review_setup(app):
         }
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def create_review(app, reviewer_id, breeder_id, rating=5, comment="Great breeder."):
+def create_review(app: Any, reviewer_id: Any, breeder_id: Any, rating: Any = 5, comment: Any = "Great breeder.") -> Any:
+    """Create and persist a test review."""
     with app.app_context():
         review = Review(
             reviewer_id=reviewer_id,
@@ -68,7 +76,8 @@ def create_review(app, reviewer_id, breeder_id, rating=5, comment="Great breeder
         return review.id
 
 
-def test_list_breeder_reviews_is_public(client, app, review_setup):
+def test_list_breeder_reviews_is_public(client: Any, app: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     create_review(
         app,
         review_setup["reviewer_id"],
@@ -84,7 +93,8 @@ def test_list_breeder_reviews_is_public(client, app, review_setup):
     assert payload["data"]["reviews"][0]["rating"] == 5
 
 
-def test_create_review_success(client, review_setup):
+def test_create_review_success(client: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/breeders/{review_setup['breeder_id']}/reviews",
         headers=auth_header(review_setup["reviewer_token"]),
@@ -98,7 +108,8 @@ def test_create_review_success(client, review_setup):
     assert payload["data"]["review"]["comment"] == "Very helpful."
 
 
-def test_create_review_requires_auth(client, review_setup):
+def test_create_review_requires_auth(client: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/breeders/{review_setup['breeder_id']}/reviews",
         json={"rating": 5},
@@ -108,7 +119,8 @@ def test_create_review_requires_auth(client, review_setup):
 
 
 @pytest.mark.parametrize("rating", [0, 6, 4.5, "bad", True])
-def test_create_review_rejects_invalid_rating(client, review_setup, rating):
+def test_create_review_rejects_invalid_rating(client: Any, review_setup: Any, rating: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/breeders/{review_setup['breeder_id']}/reviews",
         headers=auth_header(review_setup["reviewer_token"]),
@@ -119,7 +131,8 @@ def test_create_review_rejects_invalid_rating(client, review_setup, rating):
     assert response.get_json()["success"] is False
 
 
-def test_create_review_rejects_own_breeder_profile(client, review_setup):
+def test_create_review_rejects_own_breeder_profile(client: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/breeders/{review_setup['breeder_id']}/reviews",
         headers=auth_header(review_setup["owner_token"]),
@@ -129,7 +142,8 @@ def test_create_review_rejects_own_breeder_profile(client, review_setup):
     assert response.status_code == 403
 
 
-def test_create_review_rejects_duplicate(client, app, review_setup):
+def test_create_review_rejects_duplicate(client: Any, app: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     create_review(
         app,
         review_setup["reviewer_id"],
@@ -145,7 +159,8 @@ def test_create_review_rejects_duplicate(client, app, review_setup):
     assert response.status_code == 409
 
 
-def test_update_review_success(client, app, review_setup):
+def test_update_review_success(client: Any, app: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     review_id = create_review(
         app,
         review_setup["reviewer_id"],
@@ -164,7 +179,8 @@ def test_update_review_success(client, app, review_setup):
     assert payload["data"]["review"]["comment"] == "Updated."
 
 
-def test_update_review_rejects_non_author(client, app, review_setup):
+def test_update_review_rejects_non_author(client: Any, app: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     review_id = create_review(
         app,
         review_setup["reviewer_id"],
@@ -180,7 +196,8 @@ def test_update_review_rejects_non_author(client, app, review_setup):
     assert response.status_code == 403
 
 
-def test_delete_review_success(client, app, review_setup):
+def test_delete_review_success(client: Any, app: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     review_id = create_review(
         app,
         review_setup["reviewer_id"],
@@ -198,7 +215,8 @@ def test_delete_review_success(client, app, review_setup):
         assert db.session.get(Review, review_id) is None
 
 
-def test_delete_review_rejects_non_author(client, app, review_setup):
+def test_delete_review_rejects_non_author(client: Any, app: Any, review_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     review_id = create_review(
         app,
         review_setup["reviewer_id"],

@@ -1,3 +1,7 @@
+"""Tests for listing image upload persistence."""
+
+from typing import Any
+
 from io import BytesIO
 
 from flask_jwt_extended import create_access_token
@@ -8,7 +12,8 @@ from ..models.listing_image import ListingImage
 from ..models.user import User
 
 
-def create_verified_breeder():
+def create_verified_breeder() -> Any:
+    """Create a verified breeder user for tests."""
     user = User(
         email="listing-image-breeder@test.com",
         first_name="Image",
@@ -31,11 +36,13 @@ def create_verified_breeder():
     return user
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_create_listing_with_image_persists_listing_image(client, app, monkeypatch):
+def test_create_listing_with_image_persists_listing_image(client: Any, app: Any, monkeypatch: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     monkeypatch.setattr(
         "app.routes.listings.upload_listing_image",
         lambda image: "https://cdn.example.test/listing-cat.png",

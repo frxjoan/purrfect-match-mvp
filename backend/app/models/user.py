@@ -1,3 +1,8 @@
+"""User model for customer, breeder, and admin accounts."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -5,9 +10,11 @@ from ..extensions import db
 
 
 class User(db.Model):
-    __tablename__ = 'users'
+    """Represent an application user account."""
 
-    __table_args__ = (
+    __tablename__: str = 'users'
+
+    __table_args__: tuple[Any, ...] = (
         db.CheckConstraint(
             "role IN ('customer', 'breeder', 'admin')",
             name='ck_users_role_valid',
@@ -90,16 +97,20 @@ class User(db.Model):
         cascade='all, delete-orphan',
     )
 
-    def set_password(self, password):
+    def set_password(self, password: Any) -> None:
+        """Hash and store a plain-text password."""
         self.password_hash = generate_password_hash(password)
 
-    def check_password(self, password):
+    def check_password(self, password: Any) -> bool:
+        """Return whether a plain-text password matches the stored hash."""
         return check_password_hash(self.password_hash, password)
 
-    def normalize_email(self):
+    def normalize_email(self) -> None:
+        """Normalize the user email address for storage and lookup."""
         self.email = self.email.strip().lower()
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         return {
             "id": self.id,
             "email": self.email,
@@ -124,17 +135,22 @@ class User(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
-    def is_admin(self):
+    def is_admin(self) -> bool:
+        """Return whether the user has the admin role."""
         return self.role == "admin"
 
-    def is_breeder(self):
+    def is_breeder(self) -> bool:
+        """Return whether the user has the breeder role."""
         return self.role == "breeder"
 
-    def can_access_admin_panel(self):
+    def can_access_admin_panel(self) -> bool:
+        """Return whether the user can access admin features."""
         return self.is_admin()
 
-    def can_browse_listings(self):
+    def can_browse_listings(self) -> bool:
+        """Return whether the user can browse public listings."""
         return True
 
-    def can_contact_breeder(self):
+    def can_contact_breeder(self) -> bool:
+        """Return whether the user can contact breeders."""
         return self.role in ["customer", "breeder"]

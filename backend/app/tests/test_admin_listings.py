@@ -1,3 +1,7 @@
+"""Tests for admin listing moderation endpoints."""
+
+from typing import Any
+
 from flask_jwt_extended import create_access_token
 
 from ..extensions import db
@@ -6,7 +10,8 @@ from ..models.cat_listing import CatListing
 from ..models.user import User
 
 
-def create_user(email, role="customer"):
+def create_user(email: Any, role: Any = "customer") -> Any:
+    """Create and persist a test user."""
     user = User(
         email=email,
         first_name="Test",
@@ -17,11 +22,13 @@ def create_user(email, role="customer"):
     return user
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def create_listing_setup(app):
+def create_listing_setup(app: Any) -> Any:
+    """Create users and listing data for admin listing tests."""
     with app.app_context():
         admin = create_user("admin-delete-listing@test.com", role="admin")
         customer = create_user("customer-delete-listing@test.com")
@@ -58,7 +65,8 @@ def create_listing_setup(app):
         }
 
 
-def test_admin_can_archive_listing_with_delete(client, app):
+def test_admin_can_archive_listing_with_delete(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_listing_setup(app)
 
     response = client.delete(
@@ -79,7 +87,8 @@ def test_admin_can_archive_listing_with_delete(client, app):
         assert listing.status == "archived"
 
 
-def test_admin_delete_listing_requires_admin(client, app):
+def test_admin_delete_listing_requires_admin(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_listing_setup(app)
 
     response = client.delete(
@@ -91,7 +100,8 @@ def test_admin_delete_listing_requires_admin(client, app):
     assert response.get_json()["success"] is False
 
 
-def test_admin_delete_listing_returns_404_for_missing_listing(client, app):
+def test_admin_delete_listing_returns_404_for_missing_listing(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_listing_setup(app)
 
     response = client.delete(

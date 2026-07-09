@@ -1,4 +1,9 @@
-from flask import Blueprint, jsonify, request
+"""Listing API routes for browsing, creating, reporting, and deleting listings."""
+
+from typing import Any
+
+
+from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.extensions import db
@@ -8,11 +13,13 @@ from app.models.listing_report import ALLOWED_REPORT_REASONS, ListingReport
 from app.models.listing_image import ListingImage
 from app.services.cloudinary_service import upload_listing_image
 
-listings_bp = Blueprint("listings", __name__, url_prefix="/api/v1/listings")
+listings_bp: Blueprint = Blueprint("listings", __name__, url_prefix="/api/v1/listings")
 
 
 @listings_bp.get("")
-def list_listings():
+def list_listings() -> Response | tuple[Response, int]:
+    """Return non-archived listings filtered by query parameters."""
+
     query = CatListing.query.filter(CatListing.status != "archived")
 
     breed = request.args.get("breed")
@@ -109,7 +116,8 @@ def list_listings():
 
 
 @listings_bp.get("/<int:listing_id>")
-def get_listing(listing_id):
+def get_listing(listing_id: int) -> Response | tuple[Response, int]:
+    """Return a public listing by identifier."""
     listing = db.session.get(CatListing, listing_id)
 
     if not listing or listing.status == "archived":
@@ -120,7 +128,8 @@ def get_listing(listing_id):
 
 @listings_bp.post("/<int:listing_id>/reports")
 @jwt_required()
-def report_listing(listing_id):
+def report_listing(listing_id: int) -> Response | tuple[Response, int]:
+    """Create a moderation report for a listing."""
     user_id = get_jwt_identity()
     user = db.session.get(User, int(user_id))
 
@@ -141,8 +150,8 @@ def report_listing(listing_id):
             "error": {"message": "You cannot report your own listing."},
         }), 403
 
-    data = request.get_json() or {}
-    reason = data.get("reason")
+    data: dict[str, Any] = request.get_json() or {}
+    reason: Any = data.get("reason")
 
     if reason not in ALLOWED_REPORT_REASONS:
         return jsonify({
@@ -161,7 +170,7 @@ def report_listing(listing_id):
             "error": {"message": "You have already reported this listing."},
         }), 409
 
-    comment = data.get("comment")
+    comment: Any = data.get("comment")
     if isinstance(comment, str):
         comment = comment.strip() or None
 
@@ -185,7 +194,8 @@ def report_listing(listing_id):
 
 @listings_bp.delete("/<int:listing_id>")
 @jwt_required()
-def delete_own_listing(listing_id):
+def delete_own_listing(listing_id: int) -> Response | tuple[Response, int]:
+    """Archive a listing owned by the authenticated breeder."""
     user_id = get_jwt_identity()
     user = db.session.get(User, int(user_id))
 
@@ -229,7 +239,8 @@ def delete_own_listing(listing_id):
 
 @listings_bp.post("")
 @jwt_required()
-def create_listing():
+def create_listing() -> Response | tuple[Response, int]:
+    """Create a new listing for a verified breeder."""
     user_id = get_jwt_identity()
     user = db.session.get(User, int(user_id))
 
@@ -244,7 +255,7 @@ def create_listing():
 
     data = request.form
 
-    required_fields = ["title", "breed", "age_months", "gender", "price", "location"]
+    required_fields: list[str] = ["title", "breed", "age_months", "gender", "price", "location"]
     missing_fields = [field for field in required_fields if not data.get(field)]
 
     if missing_fields:
@@ -256,14 +267,14 @@ def create_listing():
             },
         }), 400
 
-    images = request.files.getlist("images")
+    images: list[Any] = request.files.getlist("images")
 
     if not images:
         return jsonify({"success": False, "error": {"message": "At least one image is required."}}), 400
 
     try:
-        age_months = int(data.get("age_months"))
-        price = float(data.get("price"))
+        age_months: int = int(data.get("age_months"))
+        price: float = float(data.get("price"))
     except (TypeError, ValueError):
         return jsonify({
             "success": False,
@@ -299,7 +310,7 @@ def create_listing():
         db.session.flush()
 
         for index, image in enumerate(images):
-            image_url = upload_listing_image(image)
+            image_url: str = upload_listing_image(image)
 
             listing_image = ListingImage(
                 listing_id=listing.id,

@@ -1,12 +1,19 @@
+"""Review model storing customer feedback for breeder profiles."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 
 class Review(db.Model):
-    __tablename__ = 'reviews'
+    """Represent a customer review for a breeder profile."""
 
-    __table_args__ = (
+    __tablename__: str = 'reviews'
+
+    __table_args__: tuple[Any, ...] = (
         db.CheckConstraint('rating >= 1 AND rating <= 5', name='ck_reviews_rating_range'),
         db.UniqueConstraint('reviewer_id', 'breeder_id', name='uq_reviewer_breeder_review'),
     )
@@ -34,9 +41,10 @@ class Review(db.Model):
         back_populates='reviews',
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         reviewer_name = None
-        reviewer = None
+        reviewer: dict[str, Any] | None = None
 
         if self.reviewer:
             reviewer_name = " ".join(

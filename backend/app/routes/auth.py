@@ -1,3 +1,8 @@
+"""Authentication API routes for registration, login, and current-user lookup."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request
@@ -7,20 +12,24 @@ from app.extensions import db
 from app.models.account_restriction import AccountRestriction
 from app.models.user import User
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
+auth_bp: Blueprint = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
 
-def now_utc():
+def now_utc() -> Any:
+    """Return the current timezone-aware UTC datetime."""
+
     return datetime.now(timezone.utc)
 
 
-def as_aware_utc(value):
+def as_aware_utc(value: Any) -> Any:
+    """Ensure a datetime value is timezone-aware in UTC."""
     if value and value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value
 
 
-def get_active_email_restriction(email):
+def get_active_email_restriction(email: Any) -> Any:
+    """Return the active account restriction for an email address, if one exists."""
     restriction = AccountRestriction.query.filter_by(email=email).first()
 
     if restriction and restriction.is_active():
@@ -29,7 +38,8 @@ def get_active_email_restriction(email):
     return None
 
 
-def moderation_error(message):
+def moderation_error(message: Any) -> Any:
+    """Build a standardized moderation error response."""
     return jsonify({
         "success": False,
         "error": {"message": message},
@@ -37,12 +47,14 @@ def moderation_error(message):
 
 
 @auth_bp.get("")
-def auth_index():
+def auth_index() -> Any:
+    """Return a lightweight description of the authentication resource."""
     return jsonify({"message": "Authentication routes", "resource": "auth"}), 200
 
 
 @auth_bp.post("/register")
-def register():
+def register() -> Any:
+    """Create a new customer account after validating registration data."""
     data = request.get_json() or {}
 
     required_fields = ["email", "password", "first_name", "last_name"]
@@ -111,7 +123,8 @@ def register():
 
 
 @auth_bp.post("/login")
-def login():
+def login() -> Any:
+    """Authenticate a user and return a JWT access token."""
     data = request.get_json() or {}
 
     email = data.get("email", "").strip().lower()
@@ -164,7 +177,8 @@ def login():
 
 @auth_bp.get("/me")
 @jwt_required()
-def get_current_user():
+def get_current_user() -> Any:
+    """Return the authenticated user from the current JWT identity."""
     user_id = get_jwt_identity()
     user = db.session.get(User, int(user_id))
 

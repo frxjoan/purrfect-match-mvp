@@ -1,9 +1,14 @@
+"""Listing report model used by customers and admins for moderation."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 
-ALLOWED_REPORT_REASONS = (
+ALLOWED_REPORT_REASONS: tuple[str, ...] = (
     "misleading_information",
     "inappropriate_content",
     "suspected_scam",
@@ -13,13 +18,15 @@ ALLOWED_REPORT_REASONS = (
     "other",
 )
 
-REPORT_STATUSES = ("pending", "accepted", "rejected")
+REPORT_STATUSES: tuple[str, ...] = ("pending", "accepted", "rejected")
 
 
 class ListingReport(db.Model):
-    __tablename__ = 'listing_reports'
+    """Represent a moderation report created for a listing."""
 
-    __table_args__ = (
+    __tablename__: str = 'listing_reports'
+
+    __table_args__: tuple[Any, ...] = (
         db.CheckConstraint(
             "reason IN ("
             "'misleading_information', "
@@ -91,7 +98,8 @@ class ListingReport(db.Model):
         foreign_keys=[reviewed_by],
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         return {
             "id": self.id,
             "listing_id": self.listing_id,
