@@ -43,35 +43,147 @@ Purrfect Match is a full-stack marketplace MVP that connects cat buyers with ver
 
 ```text
 .
+|-- .env.example
+|-- .gitignore
+|-- LICENSE
+|-- README.md
 |-- backend/
+|   |-- .flaskenv
 |   |-- app/
+|   |   |-- __init__.py
 |   |   |-- config/
+|   |   |   |-- __init__.py
+|   |   |   `-- settings.py
+|   |   |-- extensions.py
 |   |   |-- middleware/
+|   |   |   `-- __init__.py
 |   |   |-- models/
+|   |   |   |-- __init__.py
+|   |   |   |-- account_restriction.py
+|   |   |   |-- breeder_profile.py
+|   |   |   |-- cat_listing.py
+|   |   |   |-- conversation.py
+|   |   |   |-- listing_image.py
+|   |   |   |-- listing_report.py
+|   |   |   |-- message.py
+|   |   |   |-- reviews.py
+|   |   |   |-- saved_listing.py
+|   |   |   `-- user.py
 |   |   |-- routes/
+|   |   |   |-- __init__.py
+|   |   |   |-- admin.py
+|   |   |   |-- auth.py
+|   |   |   |-- breeders.py
+|   |   |   |-- conversations.py
+|   |   |   |-- health.py
+|   |   |   |-- listings.py
+|   |   |   |-- messages.py
+|   |   |   |-- reviews.py
+|   |   |   `-- users.py
 |   |   |-- services/
+|   |   |   |-- __init__.py
+|   |   |   `-- cloudinary_service.py
 |   |   |-- tests/
+|   |   |   |-- __init__.py
+|   |   |   |-- conftest.py
+|   |   |   |-- test_account_restrictions.py
+|   |   |   |-- test_admin_listings.py
+|   |   |   |-- test_admin_stats.py
+|   |   |   |-- test_app.py
+|   |   |   |-- test_breeder_listings.py
+|   |   |   |-- test_e2e_backend_flows.py
+|   |   |   |-- test_listing_images.py
+|   |   |   |-- test_listing_reports.py
+|   |   |   `-- test_reviews.py
 |   |   `-- utils/
+|   |       `-- __init__.py
 |   |-- migrations/
+|   |   |-- alembic.ini
+|   |   |-- env.py
+|   |   |-- script.py.mako
+|   |   `-- versions/
+|   |       |-- 3222339d302f_add_conversations_and_messages.py
+|   |       |-- 4f6d8a1b9c20_add_listing_reports.py
+|   |       |-- 8b2c7d4e5f10_add_account_restrictions.py
+|   |       |-- 9c8b1c2a32e2_initial_database_schema.py
+|   |       `-- a1b2c3d4e5f6_add_saved_listings.py
 |   |-- requirements.txt
 |   `-- run.py
-|-- frontend/
-|   |-- public/
-|   |-- src/
-|   |   |-- components/
-|   |   |-- context/
-|   |   |-- hooks/
-|   |   |-- pages/
-|   |   |-- routes/
-|   |   `-- services/
-|   `-- package.json
 |-- docker/
+|   |-- backend.Dockerfile
+|   `-- frontend.Dockerfile
 |-- docs/
-|-- scripts/
+|   |-- .gitkeep
+|   |-- backend-manual-qa-checklist.md
+|   |-- backend-qa-execution-report.md
+|   |-- production-database-setup.md
+|   |-- purrfect-match-backend.postman_collection.json
+|   `-- purrfect-match-backend.postman_environment.json
+|-- frontend/
+|   |-- .gitignore
+|   |-- assets/
+|   |   `-- .gitkeep
+|   |-- eslint.config.js
+|   |-- index.html
+|   |-- package-lock.json
+|   |-- package.json
+|   |-- public/
+|   |   `-- favicon.svg
+|   |-- src/
+|   |   |-- App.jsx
+|   |   |-- components/
+|   |   |   |-- ActionButton.jsx
+|   |   |   |-- CustomerListingGrid.jsx
+|   |   |   |-- CustomerSearchBar.jsx
+|   |   |   |-- DashboardRedirect.jsx
+|   |   |   |-- FloatingMessageButton.jsx
+|   |   |   |-- ListingCard.jsx
+|   |   |   |-- MainLayout.jsx
+|   |   |   |-- PageHero.jsx
+|   |   |   |-- ProtectedRoute.jsx
+|   |   |   |-- ReportListingModal.jsx
+|   |   |   |-- SectionHeader.jsx
+|   |   |   `-- StatCard.jsx
+|   |   |-- context/
+|   |   |   `-- AuthContext.jsx
+|   |   |-- hooks/
+|   |   |   `-- useAuth.js
+|   |   |-- index.css
+|   |   |-- main.jsx
+|   |   |-- pages/
+|   |   |   |-- AdminDashboardPage.jsx
+|   |   |   |-- AdminReportsPage.jsx
+|   |   |   |-- AdminUsersPage.jsx
+|   |   |   |-- BreederCertificationPage.jsx
+|   |   |   |-- BreederDashboardPage.jsx
+|   |   |   |-- BreederListingsPage.jsx
+|   |   |   |-- BreederMessagesPage.jsx
+|   |   |   |-- BreederProfilePage.jsx
+|   |   |   |-- CustomerDashboardPage.jsx
+|   |   |   |-- CustomerMessagesPage.jsx
+|   |   |   |-- CustomerProfilePage.jsx
+|   |   |   |-- CustomerSavedListingsPage.jsx
+|   |   |   |-- CustomerSettingsPage.jsx
+|   |   |   |-- HomePage.jsx
+|   |   |   |-- ListingDetailPage.jsx
+|   |   |   |-- ListingsPage.jsx
+|   |   |   |-- LoginPage.jsx
+|   |   |   |-- NotFoundPage.jsx
+|   |   |   |-- PendingVerificationPage.jsx
+|   |   |   |-- PublicBreederProfilePage.jsx
+|   |   |   |-- RegisterPage.jsx
+|   |   |   `-- UnauthorizedPage.jsx
+|   |   |-- routes/
+|   |   |   `-- AppRouter.jsx
+|   |   `-- services/
+|   |       `-- api.js
+|   |-- tests/
+|   |   `-- .gitkeep
+|   `-- vite.config.js
 |-- docker-compose.yml
 |-- render.yaml
-|-- .env.example
-`-- README.md
+|-- scripts/
+|   `-- api_smoke_tests.sh
 ```
 
 ## Environment Variables
