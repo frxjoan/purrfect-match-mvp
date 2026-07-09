@@ -162,6 +162,12 @@ export async function loginUser(credentials) {
   return getResponseData(response)
 }
 
+/**
+ * Registers a new account through Flask.
+ *
+ * @param {Object} payload - Register form values expected by /auth/register.
+ * @returns {Promise<{ message: string, user: AuthenticatedUser }>} Created account payload.
+ */
 export async function registerUser(payload) {
   const response = await api.post('/auth/register', payload)
   return getResponseData(response)
@@ -219,16 +225,36 @@ export async function fetchCurrentUserProfile() {
   return getResponseData(response)
 }
 
+/**
+ * Updates editable fields on the authenticated user's profile.
+ *
+ * @param {Object} payload - User profile fields accepted by /users/me.
+ * @returns {Promise<{ message: string, user: AuthenticatedUser }>} Updated profile payload.
+ */
 export async function updateCurrentUserProfile(payload) {
   const response = await api.patch('/users/me', payload)
   return getResponseData(response)
 }
 
+/**
+ * Loads a public user profile by id.
+ *
+ * Message and profile screens use this helper when Flask returns only a user id
+ * and the frontend needs display data such as name, role, or profile picture.
+ *
+ * @param {number|string} userId - Public user id returned by Flask.
+ * @returns {Promise<{ user: Object }>} Public user profile payload.
+ */
 export async function fetchPublicUserProfile(userId) {
-  const response = await api.get(`/users/${userId}`)
+  const response = await api.get('/users/' + userId)
   return getResponseData(response)
 }
 
+/**
+ * Loads the authenticated breeder profile.
+ *
+ * @returns {Promise<Object>} Breeder profile payload.
+ */
 export async function fetchBreederProfile() {
   const response = await api.get('/breeders/me')
   return getResponseData(response)
@@ -272,16 +298,34 @@ export async function createBreederReview(breederId, payload) {
   return getResponseData(response)
 }
 
+/**
+ * Updates an existing review owned by the authenticated user.
+ *
+ * @param {number|string} reviewId - Review id selected by the user.
+ * @param {{ rating?: number, comment?: string }} payload - Review fields accepted by Flask.
+ * @returns {Promise<Object>} Updated review payload.
+ */
 export async function updateReview(reviewId, payload) {
-  const response = await api.patch(`/reviews/${reviewId}`, payload)
+  const response = await api.patch('/reviews/' + reviewId, payload)
   return getResponseData(response)
 }
 
+/**
+ * Deletes a review through the Flask reviews endpoint.
+ *
+ * @param {number|string} reviewId - Review id selected by the user or admin.
+ * @returns {Promise<Object>} Backend delete payload.
+ */
 export async function deleteReview(reviewId) {
-  const response = await api.delete(`/reviews/${reviewId}`)
+  const response = await api.delete('/reviews/' + reviewId)
   return getResponseData(response)
 }
 
+/**
+ * Loads conversations available to the authenticated user.
+ *
+ * @returns {Promise<Object>} Conversation collection payload.
+ */
 export async function fetchConversations() {
   const response = await api.get('/conversations')
   return getResponseData(response)
