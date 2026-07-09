@@ -1,3 +1,7 @@
+"""Tests for breeder listing ownership rules."""
+
+from typing import Any
+
 from flask_jwt_extended import create_access_token
 
 from ..extensions import db
@@ -6,7 +10,8 @@ from ..models.cat_listing import CatListing
 from ..models.user import User
 
 
-def create_user(email, role="customer"):
+def create_user(email: Any, role: Any = "customer") -> Any:
+    """Create and persist a test user."""
     user = User(
         email=email,
         first_name="Test",
@@ -17,11 +22,13 @@ def create_user(email, role="customer"):
     return user
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def create_breeder_delete_setup(app):
+def create_breeder_delete_setup(app: Any) -> Any:
+    """Create breeder users and listings for ownership tests."""
     with app.app_context():
         owner_user = create_user("owner-delete-listing@test.com", role="breeder")
         other_breeder_user = create_user("other-delete-listing@test.com", role="breeder")
@@ -76,7 +83,8 @@ def create_breeder_delete_setup(app):
         }
 
 
-def test_breeder_can_delete_own_listing(client, app):
+def test_breeder_can_delete_own_listing(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_breeder_delete_setup(app)
 
     response = client.delete(
@@ -97,7 +105,8 @@ def test_breeder_can_delete_own_listing(client, app):
         assert listing.status == "archived"
 
 
-def test_breeder_cannot_delete_another_breeders_listing(client, app):
+def test_breeder_cannot_delete_another_breeders_listing(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_breeder_delete_setup(app)
 
     response = client.delete(
@@ -109,7 +118,8 @@ def test_breeder_cannot_delete_another_breeders_listing(client, app):
     assert response.get_json()["success"] is False
 
 
-def test_customer_cannot_delete_listing(client, app):
+def test_customer_cannot_delete_listing(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_breeder_delete_setup(app)
 
     response = client.delete(
@@ -121,7 +131,8 @@ def test_customer_cannot_delete_listing(client, app):
     assert response.get_json()["success"] is False
 
 
-def test_breeder_delete_archived_listing_returns_404(client, app):
+def test_breeder_delete_archived_listing_returns_404(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_breeder_delete_setup(app)
 
     response = client.delete(
@@ -133,7 +144,8 @@ def test_breeder_delete_archived_listing_returns_404(client, app):
     assert response.get_json()["success"] is False
 
 
-def test_breeder_delete_missing_listing_returns_404(client, app):
+def test_breeder_delete_missing_listing_returns_404(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     setup = create_breeder_delete_setup(app)
 
     response = client.delete(

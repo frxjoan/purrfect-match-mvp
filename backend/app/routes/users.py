@@ -1,4 +1,9 @@
-from flask import Blueprint, jsonify, request
+"""User API routes for profiles and saved listing management."""
+
+from typing import Any
+
+
+from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.extensions import db
@@ -6,15 +11,18 @@ from app.models.cat_listing import CatListing
 from app.models.saved_listing import SavedListing
 from app.models.user import User
 
-users_bp = Blueprint("users", __name__, url_prefix="/api/v1/users")
+users_bp: Blueprint = Blueprint("users", __name__, url_prefix="/api/v1/users")
 
 
-def get_current_user():
+def get_current_user() -> User | None:
+    """Return the authenticated user from the current JWT identity."""
+
     user_id = get_jwt_identity()
     return db.session.get(User, int(user_id))
 
 
-def serialize_saved_listings(user):
+def serialize_saved_listings(user: User) -> dict[str, Any]:
+    """Serialize saved listings for a user profile response."""
     saved_items = (
         SavedListing.query.join(CatListing)
         .filter(
@@ -37,7 +45,8 @@ def serialize_saved_listings(user):
 
 @users_bp.get("/me")
 @jwt_required()
-def get_own_profile():
+def get_own_profile() -> Response | tuple[Response, int]:
+    """Return the authenticated user profile."""
     user = get_current_user()
 
     if not user:
@@ -59,7 +68,8 @@ def get_own_profile():
 
 @users_bp.patch("/me")
 @jwt_required()
-def update_own_profile():
+def update_own_profile() -> Response | tuple[Response, int]:
+    """Update editable fields on the authenticated user profile."""
     user = get_current_user()
 
     if not user:
@@ -71,9 +81,9 @@ def update_own_profile():
             },
         }), 404
 
-    data = request.get_json() or {}
+    data: dict[str, Any] = request.get_json() or {}
 
-    allowed_fields = [
+    allowed_fields: list[str] = [
         "first_name",
         "last_name",
         "phone_number",
@@ -83,7 +93,7 @@ def update_own_profile():
 
     for field in allowed_fields:
         if field in data:
-            value = data[field]
+            value: Any = data[field]
             if isinstance(value, str):
                 value = value.strip()
             setattr(user, field, value)
@@ -101,7 +111,8 @@ def update_own_profile():
 
 @users_bp.get("/me/saved-listings")
 @jwt_required()
-def list_saved_listings():
+def list_saved_listings() -> Response | tuple[Response, int]:
+    """Return the authenticated user saved listings."""
     user = get_current_user()
 
     if not user:
@@ -115,14 +126,15 @@ def list_saved_listings():
 
 @users_bp.post("/me/saved-listings")
 @jwt_required()
-def save_listing():
+def save_listing() -> Response | tuple[Response, int]:
+    """Save a listing to the authenticated user account."""
     user = get_current_user()
 
     if not user:
         return jsonify({"success": False, "error": {"message": "User not found."}}), 404
 
-    data = request.get_json() or {}
-    listing_id = data.get("listing_id")
+    data: dict[str, Any] = request.get_json() or {}
+    listing_id: Any = data.get("listing_id")
 
     try:
         listing_id = int(listing_id)
@@ -158,7 +170,8 @@ def save_listing():
 
 @users_bp.delete("/me/saved-listings/<int:listing_id>")
 @jwt_required()
-def unsave_listing(listing_id):
+def unsave_listing(listing_id: int) -> Response | tuple[Response, int]:
+    """Remove a listing from the authenticated user saved listings."""
     user = get_current_user()
 
     if not user:
@@ -180,7 +193,8 @@ def unsave_listing(listing_id):
 
 
 @users_bp.get("/<int:user_id>")
-def get_public_user_profile(user_id):
+def get_public_user_profile(user_id: int) -> Response | tuple[Response, int]:
+    """Return public profile fields for a user."""
     user = db.session.get(User, user_id)
 
     if not user:

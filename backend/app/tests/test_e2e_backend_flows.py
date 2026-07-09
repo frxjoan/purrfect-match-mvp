@@ -1,3 +1,7 @@
+"""End-to-end backend flow tests for core MVP behavior."""
+
+from typing import Any
+
 from io import BytesIO
 
 from ..extensions import db
@@ -5,11 +9,13 @@ from ..models.cat_listing import CatListing
 from ..models.user import User
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def register(client, email, first_name="Test"):
+def register(client: Any, email: Any, first_name: Any = "Test") -> Any:
+    """Register a test user through the API."""
     response = client.post(
         "/api/v1/auth/register",
         json={
@@ -24,7 +30,8 @@ def register(client, email, first_name="Test"):
     return response.get_json()["data"]["user"]
 
 
-def login(client, email):
+def login(client: Any, email: Any) -> Any:
+    """Log in a test user through the API."""
     response = client.post(
         "/api/v1/auth/login",
         json={
@@ -36,7 +43,8 @@ def login(client, email):
     return response.get_json()["data"]["token"]
 
 
-def make_admin(app, email):
+def make_admin(app: Any, email: Any) -> Any:
+    """Promote a test user to admin role."""
     with app.app_context():
         admin = User.query.filter_by(email=email).one()
         admin.role = "admin"
@@ -44,7 +52,8 @@ def make_admin(app, email):
         return admin.id
 
 
-def test_buyer_breeder_moderation_e2e_flow(client, app, monkeypatch):
+def test_buyer_breeder_moderation_e2e_flow(client: Any, app: Any, monkeypatch: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     monkeypatch.setattr(
         "app.routes.breeders.upload_certification_document",
         lambda file: "https://example.test/certification.png",
@@ -210,7 +219,8 @@ def test_buyer_breeder_moderation_e2e_flow(client, app, monkeypatch):
         assert listing.status == "archived"
 
 
-def test_e2e_register_rejects_restricted_email(client, app):
+def test_e2e_register_rejects_restricted_email(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     admin = register(client, "e2e-restrict-admin@test.com", "Admin")
     blocked = register(client, "e2e-blocked@test.com", "Blocked")
     make_admin(app, "e2e-restrict-admin@test.com")

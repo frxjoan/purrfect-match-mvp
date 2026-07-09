@@ -1,3 +1,8 @@
+"""Flask application factory for the Purrfect Match backend."""
+
+from typing import Any
+
+
 from flask import Flask
 
 from . import models
@@ -12,7 +17,9 @@ from .extensions import (
 from .routes import register_blueprints
 
 
-def create_app(test_config=None):
+def create_app(test_config: Any = None) -> Any:
+    """Create and configure the Flask application instance."""
+
     app = Flask(__name__)
 
     # Load configuration
