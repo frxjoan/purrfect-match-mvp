@@ -1,3 +1,7 @@
+"""Pytest fixtures for backend application tests."""
+
+from typing import Any
+
 import pytest
 
 from .. import create_app
@@ -5,7 +9,8 @@ from ..extensions import db
 
 
 @pytest.fixture()
-def app():
+def app() -> Any:
+    """Create the Flask application fixture for tests."""
     application = create_app(
         {
         'TESTING': True,
@@ -28,5 +33,6 @@ def app():
 
 
 @pytest.fixture()
-def client(app):
+def client(app: Any) -> Any:
+    """Create a Flask test client fixture."""
     return app.test_client()

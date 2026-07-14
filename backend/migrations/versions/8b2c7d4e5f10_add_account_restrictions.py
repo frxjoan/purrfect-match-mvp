@@ -5,6 +5,8 @@ Revises: 4f6d8a1b9c20
 Create Date: 2026-06-18 00:00:00.000000
 
 """
+from typing import Any
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -16,7 +18,8 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> Any:
+    """Apply this database migration."""
     with op.batch_alter_table('users', schema=None) as batch_op:
         batch_op.add_column(sa.Column('status', sa.String(length=20), nullable=False, server_default='active'))
         batch_op.add_column(sa.Column('suspended_until', sa.DateTime(), nullable=True))
@@ -51,7 +54,8 @@ def upgrade():
     )
 
 
-def downgrade():
+def downgrade() -> Any:
+    """Revert this database migration."""
     op.drop_table('account_restrictions')
 
     with op.batch_alter_table('users', schema=None) as batch_op:

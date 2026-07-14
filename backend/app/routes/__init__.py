@@ -1,3 +1,8 @@
+"""Blueprint registration module for all backend API routes."""
+
+from typing import Any
+
+
 from .admin import admin_bp
 from .auth import auth_bp
 from .breeders import breeders_bp
@@ -9,7 +14,9 @@ from .reviews import reviews_bp
 from .users import users_bp
 
 
-def register_blueprints(app):
+def register_blueprints(app: Any) -> Any:
+    """Register every API blueprint on the Flask application."""
+
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)

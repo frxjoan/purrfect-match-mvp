@@ -1,3 +1,8 @@
+"""Review API routes for updating and deleting breeder reviews."""
+
+from typing import Any
+
+
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -6,15 +11,18 @@ from app.models.reviews import Review
 from app.models.user import User
 from app.routes.breeders import parse_rating
 
-reviews_bp = Blueprint("reviews", __name__, url_prefix="/api/v1/reviews")
+reviews_bp: Blueprint = Blueprint("reviews", __name__, url_prefix="/api/v1/reviews")
 
 
-def get_current_user():
+def get_current_user() -> Any:
+    """Return the authenticated user from the current JWT identity."""
+
     user_id = get_jwt_identity()
     return db.session.get(User, int(user_id))
 
 
-def get_review_or_404(review_id):
+def get_review_or_404(review_id: Any) -> Any:
+    """Return a review or a standardized not-found response."""
     review = db.session.get(Review, review_id)
 
     if not review:
@@ -29,7 +37,8 @@ def get_review_or_404(review_id):
     return review, None
 
 
-def ensure_review_author(user, review):
+def ensure_review_author(user: Any, review: Any) -> Any:
+    """Return an error response unless the user authored the review."""
     if review.reviewer_id != user.id:
         return (
             jsonify({
@@ -57,7 +66,8 @@ def ensure_review_author_or_admin(user, review):
 
 @reviews_bp.patch("/<int:review_id>")
 @jwt_required()
-def update_review(review_id):
+def update_review(review_id: Any) -> Any:
+    """Update a review owned by the authenticated user."""
     user = get_current_user()
 
     if not user:
@@ -108,7 +118,8 @@ def update_review(review_id):
 
 @reviews_bp.delete("/<int:review_id>")
 @jwt_required()
-def delete_review(review_id):
+def delete_review(review_id: Any) -> Any:
+    """Delete a review owned by the user or moderated by an admin."""
     user = get_current_user()
 
     if not user:

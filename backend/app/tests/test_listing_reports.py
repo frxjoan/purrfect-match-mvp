@@ -1,3 +1,7 @@
+"""Tests for listing report moderation flows."""
+
+from typing import Any
+
 import pytest
 from flask_jwt_extended import create_access_token
 
@@ -8,7 +12,8 @@ from ..models.listing_report import ListingReport
 from ..models.user import User
 
 
-def create_user(email, role="customer"):
+def create_user(email: Any, role: Any = "customer") -> Any:
+    """Create and persist a test user."""
     user = User(
         email=email,
         first_name="Test",
@@ -20,7 +25,8 @@ def create_user(email, role="customer"):
 
 
 @pytest.fixture()
-def report_setup(app):
+def report_setup(app: Any) -> Any:
+    """Create users and listing data for report tests."""
     with app.app_context():
         reporter = create_user("reporter@test.com")
         owner = create_user("owner-report@test.com", role="breeder")
@@ -74,11 +80,13 @@ def report_setup(app):
         }
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def create_report(app, reporter_id, listing_id):
+def create_report(app: Any, reporter_id: Any, listing_id: Any) -> Any:
+    """Create and persist a test listing report."""
     with app.app_context():
         report = ListingReport(
             reporter_id=reporter_id,
@@ -91,7 +99,8 @@ def create_report(app, reporter_id, listing_id):
         return report.id
 
 
-def test_create_listing_report_success(client, report_setup):
+def test_create_listing_report_success(client: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/listings/{report_setup['listing_id']}/reports",
         headers=auth_header(report_setup["reporter_token"]),
@@ -108,7 +117,8 @@ def test_create_listing_report_success(client, report_setup):
     assert payload["data"]["report"]["reason"] == "misleading_information"
 
 
-def test_create_listing_report_requires_auth(client, report_setup):
+def test_create_listing_report_requires_auth(client: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/listings/{report_setup['listing_id']}/reports",
         json={"reason": "suspected_scam"},
@@ -117,7 +127,8 @@ def test_create_listing_report_requires_auth(client, report_setup):
     assert response.status_code == 401
 
 
-def test_create_listing_report_rejects_invalid_reason(client, report_setup):
+def test_create_listing_report_rejects_invalid_reason(client: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/listings/{report_setup['listing_id']}/reports",
         headers=auth_header(report_setup["reporter_token"]),
@@ -128,7 +139,8 @@ def test_create_listing_report_rejects_invalid_reason(client, report_setup):
     assert response.get_json()["success"] is False
 
 
-def test_create_listing_report_rejects_owner(client, report_setup):
+def test_create_listing_report_rejects_owner(client: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/listings/{report_setup['listing_id']}/reports",
         headers=auth_header(report_setup["owner_token"]),
@@ -138,7 +150,8 @@ def test_create_listing_report_rejects_owner(client, report_setup):
     assert response.status_code == 403
 
 
-def test_create_listing_report_rejects_duplicate(client, app, report_setup):
+def test_create_listing_report_rejects_duplicate(client: Any, app: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     create_report(
         app,
         report_setup["reporter_id"],
@@ -154,7 +167,8 @@ def test_create_listing_report_rejects_duplicate(client, app, report_setup):
     assert response.status_code == 409
 
 
-def test_create_listing_report_rejects_archived_listing(client, report_setup):
+def test_create_listing_report_rejects_archived_listing(client: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/listings/{report_setup['archived_listing_id']}/reports",
         headers=auth_header(report_setup["reporter_token"]),
@@ -164,7 +178,8 @@ def test_create_listing_report_rejects_archived_listing(client, report_setup):
     assert response.status_code == 404
 
 
-def test_admin_list_reports_requires_admin(client, report_setup):
+def test_admin_list_reports_requires_admin(client: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.get(
         "/api/v1/admin/reports",
         headers=auth_header(report_setup["reporter_token"]),
@@ -173,7 +188,8 @@ def test_admin_list_reports_requires_admin(client, report_setup):
     assert response.status_code == 403
 
 
-def test_admin_can_list_and_get_report(client, app, report_setup):
+def test_admin_can_list_and_get_report(client: Any, app: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     report_id = create_report(
         app,
         report_setup["reporter_id"],
@@ -195,7 +211,8 @@ def test_admin_can_list_and_get_report(client, app, report_setup):
     assert detail_response.get_json()["data"]["report"]["id"] == report_id
 
 
-def test_admin_can_accept_report(client, app, report_setup):
+def test_admin_can_accept_report(client: Any, app: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     report_id = create_report(
         app,
         report_setup["reporter_id"],
@@ -219,7 +236,8 @@ def test_admin_can_accept_report(client, app, report_setup):
     assert report["reviewed_at"] is not None
 
 
-def test_admin_rejects_invalid_report_decision(client, app, report_setup):
+def test_admin_rejects_invalid_report_decision(client: Any, app: Any, report_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     report_id = create_report(
         app,
         report_setup["reporter_id"],

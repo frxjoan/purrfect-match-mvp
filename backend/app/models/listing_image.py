@@ -1,9 +1,16 @@
+"""Listing image model storing uploaded image URLs for cat listings."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 class ListingImage(db.Model):
-    __tablename__ = 'listing_images'
+    """Represent one image attached to a cat listing."""
+
+    __tablename__: str = 'listing_images'
 
     id = db.Column(db.Integer, primary_key=True)
     listing_id = db.Column(db.Integer, db.ForeignKey('cat_listings.id', ondelete='CASCADE'), nullable=False)
@@ -16,7 +23,8 @@ class ListingImage(db.Model):
         back_populates='images',
     )
 
-    def to_dict(self):
+    def to_dict(self) -> Any:
+        """Serialize the model instance into an API-friendly dictionary."""
         return {
             "id": self.id,
             "listing_id": self.listing_id,

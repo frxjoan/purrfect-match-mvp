@@ -1,6 +1,11 @@
+"""Admin API routes for dashboard stats, moderation, certifications, and users."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import func, or_
 
@@ -14,10 +19,12 @@ from app.models.message import Message
 from app.models.reviews import Review
 from app.models.user import User
 
-admin_bp = Blueprint('admin', __name__, url_prefix='/api/v1/admin')
+admin_bp: Blueprint = Blueprint('admin', __name__, url_prefix='/api/v1/admin')
 
 
-def get_current_admin():
+def get_current_admin() -> User | None:
+    """Return the authenticated admin user, if available."""
+
     user_id = get_jwt_identity()
     user = db.session.get(User, int(user_id))
 
@@ -26,14 +33,16 @@ def get_current_admin():
     return user
 
 
-def admin_required_response():
+def admin_required_response() -> tuple[Response, int]:
+    """Build a standardized admin-only error response."""
     return jsonify({
         "success": False,
         "error": {"message": "Admin access required."},
     }), 403
 
 
-def parse_datetime(value):
+def parse_datetime(value: Any) -> datetime | None:
+    """Parse an ISO datetime string into a timezone-aware datetime."""
     if not value:
         return None
 
@@ -51,7 +60,8 @@ def parse_datetime(value):
     return parsed
 
 
-def archive_breeder_listings(user):
+def archive_breeder_listings(user: User) -> int:
+    """Archive all active listings for a breeder user."""
     if not user.breeder_profile:
         return 0
 
@@ -63,7 +73,14 @@ def archive_breeder_listings(user):
     return updated
 
 
-def apply_account_restriction(user, admin, restriction_type, reason, expires_at=None):
+def apply_account_restriction(
+    user: User,
+    admin: User,
+    restriction_type: str,
+    reason: str,
+    expires_at: datetime | None = None,
+) -> tuple[AccountRestriction, int]:
+    """Apply a suspension or ban to a user account."""
     user.email = user.email.strip().lower()
 
     restriction = AccountRestriction.query.filter_by(email=user.email).first()
@@ -92,11 +109,13 @@ def apply_account_restriction(user, admin, restriction_type, reason, expires_at=
     return restriction, archived_count
 
 
-def count_rows(model):
+def count_rows(model: Any) -> int:
+    """Return the total row count for a model."""
     return db.session.query(func.count(model.id)).scalar() or 0
 
 
-def count_users_by_role(role):
+def count_users_by_role(role: str) -> int:
+    """Return the number of users for a specific role."""
     return (
         db.session.query(func.count(User.id))
         .filter(User.role == role)
@@ -105,7 +124,8 @@ def count_users_by_role(role):
     )
 
 
-def count_listings_by_status(status):
+def count_listings_by_status(status: str) -> int:
+    """Return the number of listings for a specific status."""
     return (
         db.session.query(func.count(CatListing.id))
         .filter(CatListing.status == status)
@@ -116,7 +136,8 @@ def count_listings_by_status(status):
 
 @admin_bp.get("/stats")
 @jwt_required()
-def get_admin_stats():
+def get_admin_stats() -> Response | tuple[Response, int]:
+    """Return aggregate dashboard statistics for admins."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -161,7 +182,8 @@ def get_admin_stats():
 
 @admin_bp.get("/certifications")
 @jwt_required()
-def get_certification_applications():
+def get_certification_applications() -> Response | tuple[Response, int]:
+    """Return pending breeder certification applications."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -180,18 +202,19 @@ def get_certification_applications():
 
 @admin_bp.get("/certifications/<int:breeder_id>")
 @jwt_required()
-def get_certification_application(breeder_id):
+def get_certification_application(breeder_id: int) -> Response | tuple[Response, int]:
+    """Return one breeder certification application."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
-    
+
     breeder = db.session.get(BreederProfile, breeder_id)
     if not breeder:
         return jsonify({
             "success": False,
             "error": {"message": "Breeder profile not found."},
         }), 404
-    
+
     return jsonify({
         "success": True,
         "data": {
@@ -201,18 +224,19 @@ def get_certification_application(breeder_id):
 
 @admin_bp.post("/certifications/<int:breeder_id>/approve")
 @jwt_required()
-def approve_certification(breeder_id):
+def approve_certification(breeder_id: int) -> Response | tuple[Response, int]:
+    """Approve a breeder certification application."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
-    
+
     breeder = db.session.get(BreederProfile, breeder_id)
     if not breeder:
         return jsonify({
             "success": False,
             "error": {"message": "Breeder profile not found."},
         }), 404
-    
+
     data = request.get_json() or {}
 
     breeder.certification_status = "verified"
@@ -230,18 +254,19 @@ def approve_certification(breeder_id):
 
 @admin_bp.post("/certifications/<int:breeder_id>/reject")
 @jwt_required()
-def reject_certification(breeder_id):
+def reject_certification(breeder_id: int) -> Response | tuple[Response, int]:
+    """Reject a breeder certification application with a comment."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
-    
+
     breeder = db.session.get(BreederProfile, breeder_id)
     if not breeder:
         return jsonify({
             "success": False,
             "error": {"message": "Breeder profile not found."},
         }), 404
-    
+
     data = request.get_json() or {}
 
     comment = data.get("comment", "").strip()
@@ -270,7 +295,8 @@ def reject_certification(breeder_id):
 
 @admin_bp.get("/reports")
 @jwt_required()
-def list_listing_reports():
+def list_listing_reports() -> Response | tuple[Response, int]:
+    """Return listing reports filtered by moderation status."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -299,7 +325,8 @@ def list_listing_reports():
 
 @admin_bp.get("/reports/<int:report_id>")
 @jwt_required()
-def get_listing_report(report_id):
+def get_listing_report(report_id: int) -> Response | tuple[Response, int]:
+    """Return one listing report for admin review."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -322,7 +349,8 @@ def get_listing_report(report_id):
 
 @admin_bp.patch("/reports/<int:report_id>")
 @jwt_required()
-def review_listing_report(report_id):
+def review_listing_report(report_id: int) -> Response | tuple[Response, int]:
+    """Accept or reject a listing report."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -366,7 +394,8 @@ def review_listing_report(report_id):
 
 @admin_bp.delete("/listings/<int:listing_id>")
 @jwt_required()
-def delete_listing_as_admin(listing_id):
+def delete_listing_as_admin(listing_id: int) -> Response | tuple[Response, int]:
+    """Archive a listing through admin moderation."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -392,7 +421,8 @@ def delete_listing_as_admin(listing_id):
 
 @admin_bp.get("/users")
 @jwt_required()
-def list_admin_users():
+def list_admin_users() -> Response | tuple[Response, int]:
+    """Return users visible from the admin panel."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -441,7 +471,8 @@ def list_admin_users():
 
 @admin_bp.post("/users/<int:user_id>/restrictions")
 @jwt_required()
-def restrict_user(user_id):
+def restrict_user(user_id: Any) -> Any:
+    """Create or update an account restriction for a user."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()
@@ -505,7 +536,8 @@ def restrict_user(user_id):
 
 @admin_bp.delete("/users/<int:user_id>/restrictions")
 @jwt_required()
-def lift_user_restriction(user_id):
+def lift_user_restriction(user_id: Any) -> Any:
+    """Remove an account restriction from a user."""
     admin = get_current_admin()
     if not admin:
         return admin_required_response()

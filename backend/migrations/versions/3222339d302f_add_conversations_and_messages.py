@@ -5,6 +5,8 @@ Revises: 9c8b1c2a32e2
 Create Date: 2026-06-16 12:59:52.584540
 
 """
+from typing import Any
+
 from alembic import op
 
 
@@ -15,7 +17,8 @@ branch_labels = None
 depends_on = None
 
 
-def upgrade():
+def upgrade() -> Any:
+    """Apply this database migration."""
     with op.batch_alter_table('breeder_profiles', schema=None) as batch_op:
         batch_op.drop_constraint(batch_op.f('breeder_profiles_user_id_fkey'), type_='foreignkey')
         batch_op.create_foreign_key(
@@ -113,7 +116,8 @@ def upgrade():
         )
 
 
-def downgrade():
+def downgrade() -> Any:
+    """Revert this database migration."""
     with op.batch_alter_table('reviews', schema=None) as batch_op:
         batch_op.drop_constraint(batch_op.f('uq_reviewer_breeder_review'), type_='unique')
         batch_op.drop_constraint(batch_op.f('reviews_reviewer_id_fkey'), type_='foreignkey')

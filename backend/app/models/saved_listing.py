@@ -1,12 +1,19 @@
+"""Saved listing model connecting customers to favorited listings."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
 from ..extensions import db
 
 
 class SavedListing(db.Model):
-    __tablename__ = 'saved_listings'
+    """Represent a customer favorite listing relationship."""
 
-    __table_args__ = (
+    __tablename__: str = 'saved_listings'
+
+    __table_args__: tuple[Any, ...] = (
         db.UniqueConstraint('user_id', 'listing_id', name='uq_saved_listings_user_listing'),
     )
 
@@ -24,7 +31,8 @@ class SavedListing(db.Model):
         back_populates='saved_by',
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         return {
             "id": self.id,
             "user_id": self.user_id,

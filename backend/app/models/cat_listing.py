@@ -1,12 +1,19 @@
-﻿from datetime import datetime, timezone
+"""Cat listing model for breeder-created adoption announcements."""
+
+from typing import Any
+
+
+from datetime import datetime, timezone
 
 from ..extensions import db
 
 
 class CatListing(db.Model):
-    __tablename__ = 'cat_listings'
+    """Represent a cat listing created by a breeder."""
 
-    __table_args__ = (
+    __tablename__: str = 'cat_listings'
+
+    __table_args__: tuple[Any, ...] = (
         db.CheckConstraint(
             "status IN ('available', 'reserved', 'sold', 'archived')",
             name='ck_cat_listing_status_valid',
@@ -68,7 +75,8 @@ class CatListing(db.Model):
         cascade='all, delete-orphan',
     )
 
-    def to_dict(self):
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the model instance into an API-friendly dictionary."""
         return {
             "id": self.id,
             "breeder_id": self.breeder_id,

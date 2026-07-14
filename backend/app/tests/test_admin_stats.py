@@ -1,3 +1,7 @@
+"""Tests for admin dashboard statistics."""
+
+from typing import Any
+
 from flask_jwt_extended import create_access_token
 
 from ..extensions import db
@@ -7,7 +11,8 @@ from ..models.listing_report import ListingReport
 from ..models.user import User
 
 
-def create_user(email, role="customer"):
+def create_user(email: Any, role: Any = "customer") -> Any:
+    """Create and persist a test user."""
     user = User(
         email=email,
         first_name="Test",
@@ -18,11 +23,13 @@ def create_user(email, role="customer"):
     return user
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_admin_stats_requires_admin(client, app):
+def test_admin_stats_requires_admin(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         user = create_user("stats-user@test.com")
         db.session.add(user)
@@ -35,7 +42,8 @@ def test_admin_stats_requires_admin(client, app):
     assert response.get_json()["success"] is False
 
 
-def test_admin_stats_returns_dashboard_counts(client, app):
+def test_admin_stats_returns_dashboard_counts(client: Any, app: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         admin = create_user("stats-admin@test.com", role="admin")
         customer = create_user("stats-customer@test.com")

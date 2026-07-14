@@ -1,6 +1,11 @@
+"""Conversation API routes for buyer and breeder messaging threads."""
+
+from typing import Any
+
+
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import or_
 
@@ -10,19 +15,22 @@ from app.models.cat_listing import CatListing
 from app.models.conversation import Conversation
 from app.models.message import Message
 
-conversations_bp = Blueprint(
+conversations_bp: Blueprint = Blueprint(
     "conversations",
     __name__,
     url_prefix="/api/v1/conversations",
 )
 
 
-def get_current_user():
+def get_current_user() -> User | None:
+    """Return the authenticated user from the current JWT identity."""
+
     user_id = get_jwt_identity()
     return db.session.get(User, int(user_id))
 
 
-def can_access_conversation(user, conversation):
+def can_access_conversation(user: User, conversation: Conversation) -> bool:
+    """Return whether a user can access a conversation."""
     if conversation.customer_id == user.id:
         return True
 
@@ -34,7 +42,8 @@ def can_access_conversation(user, conversation):
 
 @conversations_bp.get("")
 @jwt_required()
-def list_conversations():
+def list_conversations() -> Response | tuple[Response, int]:
+    """Return all conversations visible to the authenticated user."""
     user = get_current_user()
 
     if not user:
@@ -65,14 +74,15 @@ def list_conversations():
 
 @conversations_bp.post("")
 @jwt_required()
-def start_conversation():
+def start_conversation() -> Response | tuple[Response, int]:
+    """Create or return a conversation for a listing."""
     user = get_current_user()
 
     if not user:
         return jsonify({"success": False, "error": {"message": "User not found."}}), 404
 
-    data = request.get_json() or {}
-    listing_id = data.get("listing_id")
+    data: dict[str, Any] = request.get_json() or {}
+    listing_id: Any = data.get("listing_id")
 
     if not listing_id:
         return jsonify({
@@ -135,7 +145,8 @@ def start_conversation():
 
 @conversations_bp.get("/<int:conversation_id>")
 @jwt_required()
-def get_conversation(conversation_id):
+def get_conversation(conversation_id: int) -> Response | tuple[Response, int]:
+    """Return one conversation with its messages."""
     user = get_current_user()
 
     if not user:
@@ -165,7 +176,8 @@ def get_conversation(conversation_id):
 
 @conversations_bp.get("/<int:conversation_id>/messages")
 @jwt_required()
-def list_messages(conversation_id):
+def list_messages(conversation_id: int) -> Response | tuple[Response, int]:
+    """Return all messages for an accessible conversation."""
     user = get_current_user()
 
     if not user:
@@ -195,7 +207,8 @@ def list_messages(conversation_id):
 
 @conversations_bp.post("/<int:conversation_id>/messages")
 @jwt_required()
-def send_message(conversation_id):
+def send_message(conversation_id: int) -> Response | tuple[Response, int]:
+    """Create a new message in an accessible conversation."""
     user = get_current_user()
 
     if not user:
@@ -215,7 +228,7 @@ def send_message(conversation_id):
             "error": {"message": "Unauthorized to send a message in this conversation."},
         }), 403
 
-    data = request.get_json() or {}
+    data: dict[str, Any] = request.get_json() or {}
     content = data.get("content", "").strip()
 
     if not content:

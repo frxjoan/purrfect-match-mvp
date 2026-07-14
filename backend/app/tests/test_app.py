@@ -1,4 +1,9 @@
-def test_health_check(client):
+"""Basic backend health, registration, and login tests."""
+
+from typing import Any
+
+def test_health_check(client: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.get('/api/v1/health')
 
     assert response.status_code == 200
@@ -11,7 +16,8 @@ def test_health_check(client):
     }
 
 
-def test_register_and_login(client):
+def test_register_and_login(client: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     register_response = client.post(
         '/api/v1/auth/register',
         json={

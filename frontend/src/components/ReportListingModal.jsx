@@ -1,7 +1,13 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createListingReport } from '../services/api.js'
 import ActionButton from './ActionButton.jsx'
 
+/**
+ * Report reasons supported by the Flask listing report endpoint.
+ *
+ * The submitted values must match backend validation, while the second value is
+ * the label shown to the customer.
+ */
 const reportReasons = [
   ['misleading_information', 'Misleading information'],
   ['inappropriate_content', 'Inappropriate content'],
@@ -12,6 +18,16 @@ const reportReasons = [
   ['other', 'Other'],
 ]
 
+/**
+ * Collects and submits a listing report for admin moderation.
+ *
+ * The modal posts the selected reason and optional comment to Flask. Backend
+ * validation errors, such as duplicate reports or reporting your own listing,
+ * are displayed through the local error state.
+ *
+ * @param {{ listing: Object|null, onClose: Function }} props - Report modal props.
+ * @returns {JSX.Element|null} Report form, success step, or null when closed.
+ */
 function ReportListingModal({ listing, onClose }) {
   const [details, setDetails] = useState('')
   const [error, setError] = useState('')
@@ -33,6 +49,12 @@ function ReportListingModal({ listing, onClose }) {
     return null
   }
 
+  /**
+   * Sends the report payload to Flask and advances to the thank-you step.
+   *
+   * @param {SubmitEvent} event - Form submit event.
+   * @returns {Promise<void>} Completes after the report succeeds or an error is shown.
+   */
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')

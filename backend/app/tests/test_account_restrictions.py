@@ -1,3 +1,7 @@
+"""Tests for account suspension and ban flows."""
+
+from typing import Any
+
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -10,7 +14,8 @@ from ..models.cat_listing import CatListing
 from ..models.user import User
 
 
-def create_user(email, role="customer", status="active"):
+def create_user(email: Any, role: Any = "customer", status: Any = "active") -> Any:
+    """Create and persist a test user."""
     user = User(
         email=email,
         first_name="Test",
@@ -23,7 +28,8 @@ def create_user(email, role="customer", status="active"):
 
 
 @pytest.fixture()
-def restriction_setup(app):
+def restriction_setup(app: Any) -> Any:
+    """Create users and restrictions for moderation tests."""
     with app.app_context():
         admin = create_user("restriction-admin@test.com", role="admin")
         user = create_user("restricted-user@test.com")
@@ -42,11 +48,13 @@ def restriction_setup(app):
         }
 
 
-def auth_header(token):
+def auth_header(token: Any) -> Any:
+    """Build an Authorization header for a JWT token."""
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_register_rejects_active_email_ban(client, app, restriction_setup):
+def test_register_rejects_active_email_ban(client: Any, app: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         restriction = AccountRestriction(
             email="blocked-register@test.com",
@@ -71,7 +79,8 @@ def test_register_rejects_active_email_ban(client, app, restriction_setup):
     assert response.get_json()["success"] is False
 
 
-def test_register_rejects_active_email_suspension(client, app, restriction_setup):
+def test_register_rejects_active_email_suspension(client: Any, app: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         restriction = AccountRestriction(
             email="suspended-register@test.com",
@@ -97,7 +106,8 @@ def test_register_rejects_active_email_suspension(client, app, restriction_setup
     assert response.get_json()["success"] is False
 
 
-def test_login_rejects_banned_user(client, app, restriction_setup):
+def test_login_rejects_banned_user(client: Any, app: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         user = db.session.get(User, restriction_setup["user_id"])
         user.status = "banned"
@@ -115,7 +125,8 @@ def test_login_rejects_banned_user(client, app, restriction_setup):
     assert response.status_code == 403
 
 
-def test_login_rejects_active_suspension(client, app, restriction_setup):
+def test_login_rejects_active_suspension(client: Any, app: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         user = db.session.get(User, restriction_setup["user_id"])
         user.status = "suspended"
@@ -134,7 +145,8 @@ def test_login_rejects_active_suspension(client, app, restriction_setup):
     assert response.status_code == 403
 
 
-def test_login_restores_expired_suspension(client, app, restriction_setup):
+def test_login_restores_expired_suspension(client: Any, app: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         user = db.session.get(User, restriction_setup["user_id"])
         user.status = "suspended"
@@ -158,7 +170,8 @@ def test_login_restores_expired_suspension(client, app, restriction_setup):
         assert user.suspended_until is None
 
 
-def test_admin_can_suspend_and_lift_user(client, app, restriction_setup):
+def test_admin_can_suspend_and_lift_user(client: Any, app: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     expires_at = (datetime.now(timezone.utc) + timedelta(days=3)).isoformat()
 
     response = client.post(
@@ -186,7 +199,8 @@ def test_admin_can_suspend_and_lift_user(client, app, restriction_setup):
     assert lift_response.get_json()["data"]["user"]["status"] == "active"
 
 
-def test_admin_restriction_requires_admin(client, restriction_setup):
+def test_admin_restriction_requires_admin(client: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/admin/users/{restriction_setup['user_id']}/restrictions",
         headers=auth_header(restriction_setup["other_token"]),
@@ -199,7 +213,8 @@ def test_admin_restriction_requires_admin(client, restriction_setup):
     assert response.status_code == 403
 
 
-def test_admin_ban_archives_breeder_active_listings(client, app, restriction_setup):
+def test_admin_ban_archives_breeder_active_listings(client: Any, app: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     with app.app_context():
         breeder_user = create_user("ban-breeder@test.com", role="breeder")
         db.session.add(breeder_user)
@@ -260,7 +275,8 @@ def test_admin_ban_archives_breeder_active_listings(client, app, restriction_set
         assert db.session.get(CatListing, archived_listing_id).status == "archived"
 
 
-def test_admin_rejects_invalid_restriction_type(client, restriction_setup):
+def test_admin_rejects_invalid_restriction_type(client: Any, restriction_setup: Any) -> Any:
+    """Validate the expected backend behavior for this scenario."""
     response = client.post(
         f"/api/v1/admin/users/{restriction_setup['user_id']}/restrictions",
         headers=auth_header(restriction_setup["admin_token"]),

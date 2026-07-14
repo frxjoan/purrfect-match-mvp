@@ -1,16 +1,23 @@
+"""Shared Flask extension instances used by the application factory."""
+
+from typing import Any
+
+
 import cloudinary
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
-cors = CORS()
-db = SQLAlchemy()
-migrate = Migrate()
-jwt = JWTManager()
+cors: CORS = CORS()
+db: SQLAlchemy = SQLAlchemy()
+migrate: Migrate = Migrate()
+jwt: JWTManager = JWTManager()
 
 
-def configure_cloudinary(app):
+def configure_cloudinary(app: Any) -> Any:
+    """Configure Cloudinary credentials from the Flask application settings."""
+
     cloudinary.config(
         cloud_name=app.config.get('CLOUDINARY_CLOUD_NAME'),
         api_key=app.config.get('CLOUDINARY_API_KEY'),
