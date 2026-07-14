@@ -6,12 +6,14 @@ import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListings, fetchSavedListings, saveListing, unsaveListing } from '../services/api.js'
+import { applyListingFilters, emptyListingFilters } from '../utils/listingFilters.js'
 
 function ListingsPage() {
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [filters, setFilters] = useState({ search: '' })
+  const [query, setQuery] = useState('')
+  const [filters, setFilters] = useState(emptyListingFilters)
   const [listings, setListings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -35,7 +37,7 @@ function ListingsPage() {
       } catch (error) {
         if (isActive) {
           setListings([])
-          setLoadError(error.response?.data?.error?.message ?? 'Listings could not be loaded from the backend.')
+          setLoadError(error.response?.data?.error?.message ?? 'Listings could not be loaded.')
         }
       } finally {
         if (isActive) {
@@ -79,13 +81,7 @@ function ListingsPage() {
     }
   }, [currentUser?.token])
 
-  const filteredListings = useMemo(() => {
-    return listings.filter((listing) => {
-      const haystack = `${listing.name} ${listing.title} ${listing.breed} ${listing.location}`.toLowerCase()
-
-      return haystack.includes(filters.search.toLowerCase())
-    })
-  }, [filters, listings])
+  const filteredListings = useMemo(() => applyListingFilters(listings, query, filters), [filters, listings, query])
 
   function requireLoginOrRun(action) {
     if (!currentUser?.token) {
@@ -116,7 +112,7 @@ function ListingsPage() {
   return (
     <>
       <div className="mx-auto w-full max-w-6xl space-y-10">
-        <CustomerSearchBar onChange={(value) => setFilters({ search: value })} value={filters.search} />
+        <CustomerSearchBar filters={filters} listings={listings} onChange={setQuery} onFiltersChange={setFilters} value={query} />
         {!currentUser ? (
           <div className="mx-auto max-w-md rounded-xl border border-black bg-white p-3 text-center text-xs">
             Listings are public. Message, save and report actions require login.

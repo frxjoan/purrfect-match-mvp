@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
@@ -12,6 +12,7 @@ function CustomerDashboardPage() {
   const [conversations, setConversations] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [notice, setNotice] = useState('')
+  const isAdminPreview = currentUser?.role === 'admin'
 
   useEffect(() => {
     let ignore = false
@@ -20,27 +21,35 @@ function CustomerDashboardPage() {
       setIsLoading(true)
       setNotice('')
 
-      try {
-        const [listingData, savedData, conversationData] = await Promise.all([
-          fetchListings({ status: 'available' }),
-          fetchSavedListings(),
-          fetchConversations(),
-        ])
+      const savedListingsRequest = isAdminPreview
+        ? Promise.resolve({ listings: [] })
+        : fetchSavedListings()
 
-        if (!ignore) {
-          setListings(listingData.listings)
-          setSavedListings(savedData.listings)
-          setConversations(conversationData.conversations ?? [])
-        }
-      } catch (error) {
-        if (!ignore) {
-          setNotice(error.response?.data?.error?.message ?? 'Customer dashboard data could not be loaded.')
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false)
-        }
+      const [listingResult, savedResult, conversationResult] = await Promise.allSettled([
+        fetchListings({ status: 'available' }),
+        savedListingsRequest,
+        fetchConversations(),
+      ])
+
+      if (ignore) {
+        return
       }
+
+      setListings(listingResult.status === 'fulfilled' ? listingResult.value.listings : [])
+      setSavedListings(savedResult.status === 'fulfilled' ? savedResult.value.listings : [])
+      setConversations(conversationResult.status === 'fulfilled' ? conversationResult.value.conversations ?? [] : [])
+
+      const failedSections = []
+      if (listingResult.status === 'rejected') failedSections.push('listings')
+      if (savedResult.status === 'rejected') failedSections.push('saved listings')
+      if (conversationResult.status === 'rejected') failedSections.push('messages')
+
+      setNotice(
+        failedSections.length
+          ? `Some customer dashboard data could not be loaded: ${failedSections.join(', ')}.`
+          : '',
+      )
+      setIsLoading(false)
     }
 
     loadDashboard()
@@ -48,13 +57,14 @@ function CustomerDashboardPage() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [isAdminPreview])
 
   const recommendedListings = useMemo(
     () => (savedListings.length ? savedListings : listings).slice(0, 3),
     [listings, savedListings],
   )
   const profileComplete = Boolean(currentUser?.first_name && currentUser?.last_name && currentUser?.email)
+  const savedListingsNote = isAdminPreview ? 'Admin preview' : 'Synced with your account'
 
   return (
     <>
@@ -65,7 +75,7 @@ function CustomerDashboardPage() {
         actions={<ActionButton to="/customer/listings">Browse listings</ActionButton>}
       />
       <section className="grid gap-4 md:grid-cols-3">
-        <StatCard label="Saved listings" value={String(savedListings.length)} note="Synced with your account" />
+        <StatCard label="Saved listings" value={String(savedListings.length)} note={savedListingsNote} />
         <StatCard label="Open messages" value={String(conversations.length)} note="Conversations" />
         <StatCard label="Profile" value={profileComplete ? 'Ready' : 'Incomplete'} note="Account profile" />
       </section>

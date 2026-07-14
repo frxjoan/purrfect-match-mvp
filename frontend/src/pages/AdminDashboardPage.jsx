@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
@@ -7,7 +7,7 @@ import useAuth from '../hooks/useAuth.js'
 
 function AdminDashboardPage() {
   const { currentUser } = useAuth()
-  const [backendStats, setBackendStats] = useState(null)
+  const [dashboardStats, setDashboardStats] = useState(null)
   const [certifications, setCertifications] = useState([])
   const [reports, setReports] = useState([])
   const [isLoading, setIsLoading] = useState(Boolean(currentUser?.token))
@@ -18,7 +18,7 @@ function AdminDashboardPage() {
 
     async function loadDashboard() {
       if (!currentUser?.token) {
-        setNotice('Sign in with a backend admin account to load dashboard data.')
+        setNotice('Sign in with an admin account to load dashboard data.')
         setIsLoading(false)
         return
       }
@@ -34,7 +34,7 @@ function AdminDashboardPage() {
         ])
 
         if (!ignore) {
-          setBackendStats(statsData.stats)
+          setDashboardStats(statsData.stats)
           setCertifications(certificationData.certifications ?? [])
           setReports(reportsData.reports ?? [])
         }
@@ -57,13 +57,13 @@ function AdminDashboardPage() {
   }, [currentUser?.token])
 
   const stats = useMemo(() => ([
-    { label: 'Total users', value: String(backendStats?.total_users ?? '-'), note: 'Users' },
-    { label: 'Breeders', value: String(backendStats?.total_breeders ?? '-'), note: `${backendStats?.pending_certifications ?? '-'} pending review` },
-    { label: 'Customers', value: String(backendStats?.total_customers ?? '-'), note: 'Registered customer accounts' },
-    { label: 'Active listings', value: String(backendStats?.active_listings ?? '-'), note: 'Listings' },
-    { label: 'Open reports', value: String(backendStats?.pending_reports ?? '-'), note: 'Moderation follow-up' },
-    { label: 'Reviews', value: String(backendStats?.total_reviews ?? '-'), note: 'Reviews' },
-  ]), [backendStats])
+    { label: 'Total users', value: String(dashboardStats?.total_users ?? '-'), note: 'Users' },
+    { label: 'Breeders', value: String(dashboardStats?.total_breeders ?? '-'), note: `${dashboardStats?.pending_certifications ?? '-'} pending review` },
+    { label: 'Customers', value: String(dashboardStats?.total_customers ?? '-'), note: 'Registered customer accounts' },
+    { label: 'Active listings', value: String(dashboardStats?.active_listings ?? '-'), note: 'Listings' },
+    { label: 'Open reports', value: String(dashboardStats?.pending_reports ?? '-'), note: 'Moderation follow-up' },
+    { label: 'Reviews', value: String(dashboardStats?.total_reviews ?? '-'), note: 'Reviews' },
+  ]), [dashboardStats])
 
   return (
     <>
@@ -74,7 +74,7 @@ function AdminDashboardPage() {
       />
       <section className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
-        {isLoading ? <p className="text-sm font-semibold text-slate-400 md:col-span-3">Loading backend admin data...</p> : null}
+        {isLoading ? <p className="text-sm font-semibold text-slate-400 md:col-span-3">Loading admin data...</p> : null}
         {notice ? <p className="text-sm font-semibold text-amber-700 md:col-span-3">{notice}</p> : null}
       </section>
       <section className="grid gap-5 lg:grid-cols-3">
@@ -111,7 +111,7 @@ function AdminDashboardPage() {
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-bold text-slate-950">Users</h2>
           <p className="mt-3 text-sm leading-6 text-slate-600">
-            Review active, suspended, and banned accounts from the backend user list.
+            Review active, suspended, and banned accounts.
           </p>
           <ActionButton className="mt-5" to="/admin/users" variant="secondary">Open users</ActionButton>
         </div>

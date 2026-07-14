@@ -3,6 +3,7 @@ import DashboardRedirect from '../components/DashboardRedirect.jsx'
 import MainLayout from '../components/MainLayout.jsx'
 import ProtectedRoute from '../components/ProtectedRoute.jsx'
 import AdminDashboardPage from '../pages/AdminDashboardPage.jsx'
+import AdminMessagesPage from '../pages/AdminMessagesPage.jsx'
 import AdminReportsPage from '../pages/AdminReportsPage.jsx'
 import AdminUsersPage from '../pages/AdminUsersPage.jsx'
 import BreederCertificationPage from '../pages/BreederCertificationPage.jsx'
@@ -13,6 +14,7 @@ import BreederProfilePage from '../pages/BreederProfilePage.jsx'
 import CustomerDashboardPage from '../pages/CustomerDashboardPage.jsx'
 import CustomerMessagesPage from '../pages/CustomerMessagesPage.jsx'
 import CustomerProfilePage from '../pages/CustomerProfilePage.jsx'
+import CustomerReviewsPage from '../pages/CustomerReviewsPage.jsx'
 import CustomerSavedListingsPage from '../pages/CustomerSavedListingsPage.jsx'
 import CustomerSettingsPage from '../pages/CustomerSettingsPage.jsx'
 import HomePage from '../pages/HomePage.jsx'
@@ -57,7 +59,7 @@ function AppRouter() {
           <Route path="/customer/listings/:listingId" element={<ListingDetailPage />} />
           <Route path="/customer/profile" element={<ProtectedRoute allowedRole="customer"><CustomerProfilePage /></ProtectedRoute>} />
           <Route path="/customer/messages" element={<ProtectedRoute allowedRole="customer"><CustomerMessagesPage /></ProtectedRoute>} />
-          <Route path="/customer/reviews" element={<Navigate to="/customer/listings" replace />} />
+          <Route path="/customer/reviews" element={<ProtectedRoute allowedRole="customer"><CustomerReviewsPage /></ProtectedRoute>} />
           <Route path="/customer/saved" element={<ProtectedRoute allowedRole="customer"><CustomerSavedListingsPage /></ProtectedRoute>} />
           <Route path="/customer/settings" element={<ProtectedRoute allowedRole="customer"><CustomerSettingsPage /></ProtectedRoute>} />
 
@@ -73,6 +75,7 @@ function AppRouter() {
           <Route path="/admin/verifications" element={<ProtectedRoute allowedRole="admin"><PendingVerificationPage /></ProtectedRoute>} />
           <Route path="/admin/verifications/:breederId" element={<ProtectedRoute allowedRole="admin"><PendingVerificationPage /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute allowedRole="admin"><AdminReportsPage /></ProtectedRoute>} />
+          <Route path="/admin/messages" element={<ProtectedRoute allowedRole="admin"><AdminMessagesPage /></ProtectedRoute>} />
           <Route path="/admin/reports/:reportId" element={<ProtectedRoute allowedRole="admin"><AdminReportsPage /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute allowedRole="admin"><AdminUsersPage /></ProtectedRoute>} />
 

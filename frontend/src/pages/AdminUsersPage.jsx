@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { fetchAdminUsers, liftAdminUserRestriction, restrictAdminUser } from '../services/api.js'
@@ -76,7 +76,7 @@ function AdminUsersPage() {
       <SectionHeader
         eyebrow="Admin users"
         title="User management"
-        description="Review accounts and moderation status from the backend."
+        description="Review accounts and moderation status."
       />
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         {isLoading ? <p className="text-sm font-semibold text-slate-500">Loading users...</p> : null}

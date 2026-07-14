@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
@@ -62,11 +62,11 @@ function PendingVerificationPage() {
 
   return (
     <>
-      <SectionHeader eyebrow="Admin verification" title="Pending breeder verification" description="Review breeder certification applications from the backend queue." />
+      <SectionHeader eyebrow="Admin verification" title="Pending breeder verification" description="Review breeder certification applications." />
       <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           {isLoading ? <p className="text-sm text-slate-500">Loading verification queue...</p> : null}
-          {!isLoading && verifications.length === 0 ? <p className="text-sm text-slate-500">No breeder applications in the backend queue.</p> : null}
+          {!isLoading && verifications.length === 0 ? <p className="text-sm text-slate-500">No breeder applications to review.</p> : null}
           {verifications.map((breeder) => (
             <ActionButton className="w-full justify-start" key={breeder.id} to={`/admin/verifications/${breeder.id}`} variant={activeBreeder?.id === breeder.id ? 'primary' : 'secondary'}>
               {breeder.business_name} - {breeder.certification_status}

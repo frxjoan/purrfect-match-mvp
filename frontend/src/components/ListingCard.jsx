@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import ActionButton from './ActionButton.jsx'
+import breederIcon from '../assets/icon/breeder-icon.png'
 
 /**
  * Displays one normalized listing returned by the Flask listings endpoints.
@@ -25,11 +26,14 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
         <h2 className="truncate text-sm font-semibold text-slate-950">{listing.name || listing.title}</h2>
         {listing.breederId ? (
           <Link className="mt-1 inline-flex max-w-full items-center gap-2 text-slate-800 underline-offset-2 hover:underline" to={`/breeders/${listing.breederId}`}>
-            {listing.breederPhoto ? <img alt="" className="h-5 w-5 rounded-full object-cover" src={listing.breederPhoto} /> : null}
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-white text-[8px] font-bold text-[#6c5ce7]">
+              <img alt="" className="h-full w-full object-cover" src={listing.breederPhoto || breederIcon} />
+            </span>
             <span className="truncate">{listing.breeder || 'Breeder profile'}</span>
           </Link>
         ) : null}
         <p className="mt-1 text-slate-800">{listing.breed}</p>
+        {listing.gender ? <p className="text-slate-800">{listing.gender}</p> : null}
         {listing.age ? <p className="text-slate-800">{listing.age}</p> : null}
         <p className="truncate text-slate-800">{listing.location}</p>
         <p className="font-semibold text-slate-950">{listing.price.toLocaleString()} EUR</p>

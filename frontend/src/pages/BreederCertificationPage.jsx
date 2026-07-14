@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { applyAsBreeder, fetchBreederProfile } from '../services/api.js'
@@ -81,7 +81,7 @@ function BreederCertificationPage() {
       <SectionHeader
         eyebrow="Certification"
         title={`Verification status: ${status}`}
-        description="Submit and review breeder certification details through the backend."
+        description="Submit and review breeder certification details."
       />
       <section className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
         <aside className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-amber-950">

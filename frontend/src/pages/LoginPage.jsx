@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import { getPostLoginRedirect } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { loginUser } from '../services/api.js'
 
@@ -25,7 +26,7 @@ const emptyForm = {
  * @returns {JSX.Element} Login options or the selected login form.
  */
 function LoginPage() {
-  const { currentUser, getRoleDashboard, signIn } = useAuth()
+  const { currentUser, signIn } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const searchParams = new URLSearchParams(location.search)
@@ -35,13 +36,11 @@ function LoginPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
-  const redirectTarget = location.state?.from
-
   useEffect(() => {
     if (currentUser) {
-      navigate(redirectTarget ?? getRoleDashboard(currentUser.role), { replace: true })
+      navigate(getPostLoginRedirect(currentUser), { replace: true })
     }
-  }, [currentUser, getRoleDashboard, navigate, redirectTarget])
+  }, [currentUser, navigate])
 
   /**
    * Updates a controlled login input and clears stale validation/server errors.
@@ -148,19 +147,19 @@ function LoginPage() {
       })
       const user = {
         ...data.user,
-        breederVerificationStatus: data.user?.breeder_profile?.certification_status,
+        breederVerificationStatus: data.user?.breeder_certification_status ?? data.user?.breeder_profile?.certification_status,
         token: data.token,
       }
 
-      if (selectedRole !== 'admin' && user.role !== selectedRole) {
+      if (user.role !== 'admin' && selectedRole !== 'admin' && user.role !== selectedRole) {
         setNotice(`This account is registered as ${user.role}. Please choose the matching sign-in option.`)
         return
       }
 
       signIn(user)
-      navigate(redirectTarget ?? getRoleDashboard(user.role), { replace: true })
+      navigate(getPostLoginRedirect(user), { replace: true })
     } catch (error) {
-      setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your backend account credentials.')
+      setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your credentials.')
     } finally {
       setIsSubmitting(false)
     }

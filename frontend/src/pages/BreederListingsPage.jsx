@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
+import ImageFilePicker from '../components/ImageFilePicker.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { createListing, deleteListing, fetchBreederProfile, fetchListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
@@ -15,14 +16,40 @@ const emptyListingForm = {
   title: '',
 }
 
+const emptyEditForm = {
+  age_months: '',
+  breed: '',
+  description: '',
+  gender: 'female',
+  location: '',
+  price: '',
+  status: 'Available',
+  title: '',
+}
+
 function getErrorMessage(error, fallback) {
   return error.response?.data?.error?.message ?? fallback
+}
+
+function getEditFormFromListing(listing) {
+  return {
+    age_months: listing.ageMonths ?? listing.age_months ?? '',
+    breed: listing.breed ?? '',
+    description: listing.summary ?? listing.description ?? '',
+    gender: String(listing.gender || 'Female').toLowerCase(),
+    location: listing.location ?? '',
+    price: listing.price ?? '',
+    status: listing.status || 'Available',
+    title: listing.title || listing.name || '',
+  }
 }
 
 function BreederListingsPage() {
   const { currentUser } = useAuth()
   const [breederProfile, setBreederProfile] = useState(currentUser?.breeder_profile ?? null)
   const breederVerified = breederProfile?.certification_status === 'verified' || currentUser?.role === 'admin'
+  const [editForm, setEditForm] = useState(emptyEditForm)
+  const [editingListing, setEditingListing] = useState(null)
   const [listingForm, setListingForm] = useState(emptyListingForm)
   const [listings, setListings] = useState([])
   const [loadingListings, setLoadingListings] = useState(true)
@@ -36,6 +63,16 @@ function BreederListingsPage() {
     async function loadListings() {
       setLoadingListings(true)
       try {
+        if (currentUser?.role === 'admin') {
+          const listingData = await fetchListings()
+          if (!ignore) {
+            setBreederProfile(null)
+            setListings(listingData.listings)
+            setNotice('')
+          }
+          return
+        }
+
         const [profileData, listingData] = await Promise.all([
           fetchBreederProfile(),
           fetchListings(),
@@ -63,14 +100,34 @@ function BreederListingsPage() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [currentUser?.role])
 
   function updateForm(field, value) {
     setListingForm((current) => ({ ...current, [field]: value }))
   }
 
+  function updateEditForm(field, value) {
+    setEditForm((current) => ({ ...current, [field]: value }))
+  }
+
   function resetForm() {
     setListingForm(emptyListingForm)
+  }
+
+  function startEditing(listing) {
+    setEditingListing(listing)
+    setEditForm(getEditFormFromListing(listing))
+    setNotice('Listing editing is not available yet.')
+  }
+
+  function cancelEditing() {
+    setEditingListing(null)
+    setEditForm(emptyEditForm)
+  }
+
+  function handleUnavailableEditSubmit(event) {
+    event.preventDefault()
+    setNotice('Listing editing is not available yet.')
   }
 
   async function handleCreate(event) {
@@ -83,7 +140,7 @@ function BreederListingsPage() {
     }
 
     if (!currentUser?.token) {
-      setNotice('Sign in with a backend breeder account before creating a listing.')
+      setNotice('Sign in with a breeder account before creating a listing.')
       return
     }
 
@@ -105,15 +162,11 @@ function BreederListingsPage() {
     }
   }
 
-  function handleFiles(event) {
-    updateForm('images', Array.from(event.target.files ?? []))
-  }
-
   async function handleDelete(listingId) {
     setNotice('')
 
     if (!currentUser?.token) {
-      setNotice('Sign in with a backend breeder account before deleting a listing.')
+      setNotice('Sign in with a breeder account before deleting a listing.')
       return
     }
 
@@ -149,10 +202,11 @@ function BreederListingsPage() {
                   <div>
                     <p className="font-semibold text-slate-950">{listing.title}</p>
                     <p className="mt-1 text-sm text-slate-500">{listing.status} - {Number(listing.price || 0).toLocaleString()} EUR</p>
-                    <p className="mt-1 text-sm text-slate-500">{listing.breed} - {listing.location}</p>
+                    <p className="mt-1 text-sm text-slate-500">{listing.breed} - {listing.gender || 'Gender not provided'} - {listing.location}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <ActionButton to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
+                    <ActionButton onClick={() => startEditing(listing)} variant="secondary">Edit</ActionButton>
                     <ActionButton disabled={deletingListingId === listing.id} onClick={() => handleDelete(listing.id)} variant="danger">
                       {deletingListingId === listing.id ? 'Deleting...' : 'Delete'}
                     </ActionButton>
@@ -161,6 +215,49 @@ function BreederListingsPage() {
               </article>
             ))}
           </div>
+          {editingListing ? (
+            <form className="mt-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4" onSubmit={handleUnavailableEditSubmit}>
+              <h3 className="text-lg font-bold text-slate-950">Edit listing</h3>
+              <p className="mt-1 text-sm text-slate-600">You can review listing details here. Editing is not available yet.</p>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {[
+                  ['title', 'Title', 'text'],
+                  ['breed', 'Breed', 'text'],
+                  ['age_months', 'Age in months', 'number'],
+                  ['price', 'Price', 'number'],
+                  ['location', 'Location', 'text'],
+                ].map(([field, label, type]) => (
+                  <label key={field} className={field === 'location' ? 'block md:col-span-2' : 'block'}>
+                    <span className="text-sm font-semibold text-slate-700">{label}</span>
+                    <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" min="0" onChange={(event) => updateEditForm(field, event.target.value)} type={type} value={editForm[field]} />
+                  </label>
+                ))}
+                <label className="block md:col-span-2">
+                  <span className="text-sm font-semibold text-slate-700">Gender</span>
+                  <select className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateEditForm('gender', event.target.value)} value={editForm.gender}>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                  </select>
+                </label>
+                <label className="block md:col-span-2">
+                  <span className="text-sm font-semibold text-slate-700">Status</span>
+                  <select className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateEditForm('status', event.target.value)} value={editForm.status}>
+                    <option value="Available">Available</option>
+                    <option value="Reserved">Reserved</option>
+                    <option value="Sold">Sold</option>
+                  </select>
+                </label>
+                <label className="block md:col-span-2">
+                  <span className="text-sm font-semibold text-slate-700">Description</span>
+                  <textarea className="mt-2 min-h-28 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateEditForm('description', event.target.value)} value={editForm.description} />
+                </label>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <ActionButton type="submit" variant="muted">Editing unavailable</ActionButton>
+                <ActionButton onClick={cancelEditing} type="button" variant="secondary">Cancel</ActionButton>
+              </div>
+            </form>
+          ) : null}
         </div>
         <form className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleCreate}>
           <h2 className="text-xl font-bold text-slate-950">Create listing</h2>
@@ -189,10 +286,16 @@ function BreederListingsPage() {
                 <option value="male">Male</option>
               </select>
             </label>
-            <label className="block md:col-span-2">
+            <div className="block md:col-span-2">
               <span className="text-sm font-semibold text-slate-700">Images</span>
-              <input accept="image/*" className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" multiple onChange={handleFiles} type="file" />
-            </label>
+              <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <ImageFilePicker
+                  files={listingForm.images}
+                  multiple
+                  onFilesChange={(files) => updateForm('images', files)}
+                />
+              </div>
+            </div>
             <label className="block md:col-span-2">
               <span className="text-sm font-semibold text-slate-700">Description</span>
               <textarea className="mt-2 min-h-28 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateForm('description', event.target.value)} value={listingForm.description} />

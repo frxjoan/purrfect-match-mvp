@@ -186,7 +186,7 @@ export function normalizeListing(listing) {
     breeder: getBreederName(listing.breeder),
     breederId: listing.breeder_id ?? breederProfile?.id ?? null,
     breederOwnerName: breederProfile?.owner_name ?? breederProfile?.user?.display_name ?? '',
-    breederPhoto: breederProfile?.profile_picture_url ?? breederProfile?.user?.profile_picture_url ?? null,
+    breederPhoto: breederProfile?.profile_picture_url ?? breederProfile?.profilePictureUrl ?? breederProfile?.avatar_url ?? breederProfile?.user?.profile_picture_url ?? breederProfile?.user?.profilePictureUrl ?? breederProfile?.user?.avatar_url ?? null,
     breederProfile,
     gender: normalizeGender(listing.gender),
     id: listing.id,
@@ -415,6 +415,11 @@ export async function updateCurrentUserProfile(payload) {
  *
  * @returns {Promise<Object>} Breeder profile payload.
  */
+export async function fetchPublicUserProfile(userId) {
+  const response = await api.get(`/users/${userId}`)
+  return getResponseData(response)
+}
+
 export async function fetchBreederProfile() {
   const response = await api.get('/breeders/me')
   return getResponseData(response)
@@ -495,6 +500,16 @@ export async function createBreederReview(breederId, payload) {
  *
  * @returns {Promise<Object>} Conversation collection payload.
  */
+export async function updateReview(reviewId, payload) {
+  const response = await api.patch(`/reviews/${reviewId}`, payload)
+  return getResponseData(response)
+}
+
+export async function deleteReview(reviewId) {
+  const response = await api.delete(`/reviews/${reviewId}`)
+  return getResponseData(response)
+}
+
 export async function fetchConversations() {
   const response = await api.get('/conversations')
   return getResponseData(response)

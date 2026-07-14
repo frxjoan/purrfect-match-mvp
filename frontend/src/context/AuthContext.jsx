@@ -53,6 +53,40 @@ function getRoleDashboard(role) {
  * @param {Object} user - User payload returned by Flask login/register/profile endpoints.
  * @returns {Object} User object normalized for frontend session use.
  */
+
+function getBreederVerificationStatus(user) {
+  if (user?.role !== 'breeder') {
+    return null
+  }
+
+  const status = String(
+    user.breederVerificationStatus
+      ?? user.breeder_certification_status
+      ?? user.breeder_profile?.certification_status
+      ?? user.breederProfile?.certification_status
+      ?? 'unverified',
+  ).toLowerCase()
+
+  return status === 'approved' ? 'verified' : status
+}
+
+function needsBreederCertification(user) {
+  return user?.role === 'breeder' && getBreederVerificationStatus(user) !== 'verified'
+}
+
+function getPostLoginRedirect(user) {
+  if (needsBreederCertification(user)) {
+    return '/breeder/certification'
+  }
+
+  if (user?.role === 'breeder') {
+    return '/breeder/dashboard'
+  }
+
+  return '/'
+}
+
+
 function normalizeStoredUser(user) {
   if (user.role !== 'breeder') {
     return user
@@ -60,7 +94,7 @@ function normalizeStoredUser(user) {
 
   return {
     ...user,
-    breederVerificationStatus: user.breederVerificationStatus ?? user.breeder_profile?.certification_status ?? 'unverified',
+    breederVerificationStatus: getBreederVerificationStatus(user),
   }
 }
 
@@ -98,4 +132,4 @@ function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export { AuthContext, AuthProvider, getRoleDashboard }
+export { AuthContext, AuthProvider, getBreederVerificationStatus, getPostLoginRedirect, getRoleDashboard, needsBreederCertification }

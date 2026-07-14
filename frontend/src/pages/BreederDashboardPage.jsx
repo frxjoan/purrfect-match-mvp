@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
@@ -12,6 +12,7 @@ function BreederDashboardPage() {
   const [listings, setListings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [notice, setNotice] = useState('')
+  const isAdminPreview = currentUser?.role === 'admin'
 
   useEffect(() => {
     let ignore = false
@@ -20,27 +21,40 @@ function BreederDashboardPage() {
       setIsLoading(true)
       setNotice('')
 
-      try {
-        const [profileData, listingData, conversationData] = await Promise.all([
-          fetchBreederProfile(),
-          fetchListings(),
-          fetchConversations(),
-        ])
+      const profileRequest = isAdminPreview
+        ? Promise.resolve({ breeder_profile: currentUser?.breeder_profile ?? null })
+        : fetchBreederProfile()
 
-        if (!ignore) {
-          setBreederProfile(profileData.breeder_profile)
-          setListings(listingData.listings)
-          setConversations(conversationData.conversations ?? [])
-        }
-      } catch (error) {
-        if (!ignore) {
-          setNotice(error.response?.data?.error?.message ?? 'Breeder dashboard data could not be loaded.')
-        }
-      } finally {
-        if (!ignore) {
-          setIsLoading(false)
-        }
+      const [profileResult, listingResult, conversationResult] = await Promise.allSettled([
+        profileRequest,
+        fetchListings(),
+        fetchConversations(),
+      ])
+
+      if (ignore) {
+        return
       }
+
+      setBreederProfile(profileResult.status === 'fulfilled' ? profileResult.value.breeder_profile : null)
+      setListings(listingResult.status === 'fulfilled' ? listingResult.value.listings : [])
+      setConversations(conversationResult.status === 'fulfilled' ? conversationResult.value.conversations ?? [] : [])
+
+      const failedSections = []
+      if (profileResult.status === 'rejected') failedSections.push('profile')
+      if (listingResult.status === 'rejected') failedSections.push('listings')
+      if (conversationResult.status === 'rejected') failedSections.push('messages')
+
+      if (isAdminPreview && profileResult.status === 'fulfilled' && !profileResult.value.breeder_profile) {
+        setNotice('Admin preview mode is active. Breeder-only data appears when the current account has a breeder profile.')
+      } else {
+        setNotice(
+          failedSections.length
+            ? `Some breeder dashboard data could not be loaded: ${failedSections.join(', ')}.`
+            : '',
+        )
+      }
+
+      setIsLoading(false)
     }
 
     loadDashboard()
@@ -48,7 +62,7 @@ function BreederDashboardPage() {
     return () => {
       ignore = true
     }
-  }, [])
+  }, [currentUser?.breeder_profile, isAdminPreview])
 
   const breederListings = useMemo(() => {
     if (!breederProfile?.id) {
@@ -57,7 +71,12 @@ function BreederDashboardPage() {
 
     return listings.filter((listing) => Number(listing.breeder_id) === Number(breederProfile.id))
   }, [breederProfile?.id, listings])
-  const breederVerified = breederProfile?.certification_status === 'verified' || currentUser?.role === 'admin'
+  const breederVerified = isAdminPreview || breederProfile?.certification_status === 'verified'
+  const certificationValue = isAdminPreview ? 'Admin preview' : breederVerified ? 'Verified' : 'In review'
+  const certificationNote = breederProfile?.id ? 'Breeder profile' : 'No breeder profile'
+  const emptyListingText = isAdminPreview && !breederProfile?.id
+    ? 'Admin preview is not attached to a breeder profile.'
+    : 'No listings for this breeder yet.'
 
   return (
     <>
@@ -75,7 +94,7 @@ function BreederDashboardPage() {
       <section className="grid gap-4 md:grid-cols-3">
         <StatCard label="Active listings" value={String(breederListings.length)} note="Listings" />
         <StatCard label="Buyer inquiries" value={String(conversations.length)} note="Conversations" />
-        <StatCard label="Certification" value={breederVerified ? 'Verified' : 'In review'} note="Breeder profile" />
+        <StatCard label="Certification" value={certificationValue} note={certificationNote} />
       </section>
       {isLoading ? <p className="text-sm font-semibold text-slate-500">Loading dashboard...</p> : null}
       {notice ? <p className="text-sm font-semibold text-[#c24b78]">{notice}</p> : null}
@@ -89,7 +108,7 @@ function BreederDashboardPage() {
                 <p className="mt-1 text-sm text-slate-500">{listing.status} - {listing.price.toLocaleString()} EUR</p>
                 <p className="mt-1 text-sm text-slate-500">{listing.breed} - {listing.location}</p>
               </div>
-            )) : <p className="text-sm text-slate-500">No listings for this breeder yet.</p>}
+            )) : <p className="text-sm text-slate-500">{emptyListingText}</p>}
           </div>
           <ActionButton className="mt-5" to="/breeder/listings" variant="secondary">Open listings</ActionButton>
         </div>
