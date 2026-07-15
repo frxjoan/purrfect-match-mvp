@@ -55,14 +55,6 @@ const roleNavigation = {
   ],
 }
 
-/**
- * Renders a group of NavLink buttons and closes the active menu after click.
- *
- * @param {{ navigation: { to: string, label: string }[], onNavigate?: Function }} props - Navigation render props.
- * @returns {JSX.Element[]} Menu links.
- */
-function NavigationLinks({ navigation, onNavigate }) {
-
 const interfaceOptions = {
   customer: {
     dashboard: '/',
