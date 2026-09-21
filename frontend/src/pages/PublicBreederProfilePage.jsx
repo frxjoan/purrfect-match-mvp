@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import Seo from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { createBreederReview, deleteReview, fetchBreederReviews, fetchListings, fetchPublicBreederProfile, updateReview } from '../services/api.js'
 import { getStoredProfileImage } from '../utils/profileImageStorage.js'
@@ -233,6 +234,13 @@ function PublicBreederProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8">
+      {String(breederProfile.id) === String(breederId) ? (
+        <Seo
+          title={displayName}
+          description={(breederProfile.bio || `Meet ${displayName}${breederProfile.location ? ` in ${breederProfile.location}` : ''} and explore their cat listings on Purrfect Match.`).replace(/\s+/g, ' ').trim().slice(0, 160)}
+          image={profilePhoto}
+        />
+      ) : null}
       <button className="text-sm font-semibold" onClick={() => navigate(-1)} type="button">Back</button>
       <section className="grid gap-6 rounded-xl border border-black bg-[#fbfbff] p-5 md:grid-cols-[auto_1fr_auto] md:items-center">
         <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-black bg-white text-2xl font-semibold text-[#6c5ce7]">

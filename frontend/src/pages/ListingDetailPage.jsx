@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
+import Seo from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListingById, startConversation } from '../services/api.js'
 import { getStoredProfileImage } from '../utils/profileImageStorage.js'
@@ -122,6 +123,13 @@ function ListingDetailPage() {
 
   return (
     <>
+      {String(listing.id) === String(listingId) ? (
+        <Seo
+          title={listing.name || listing.title || 'Cat listing'}
+          description={(listing.summary || `Meet ${listing.name || listing.title || 'this cat'}${listing.breed ? `, a ${listing.breed}` : ''}${listing.location ? ` in ${listing.location}` : ''} on Purrfect Match.`).replace(/\s+/g, ' ').trim().slice(0, 160)}
+          image={listingImages[0]}
+        />
+      ) : null}
       <section className="mx-auto w-full max-w-5xl rounded-xl border border-black bg-[#fbfbff] p-5">
         <button className="mb-2 text-sm font-semibold" onClick={() => navigate(-1)} type="button">Back</button>
         {loadError ? <div className="mb-4 rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">{loadError}</div> : null}

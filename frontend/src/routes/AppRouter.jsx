@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import DashboardRedirect from '../components/DashboardRedirect.jsx'
 import MainLayout from '../components/MainLayout.jsx'
 import ProtectedRoute from '../components/ProtectedRoute.jsx'
+import { RouteSeo } from '../components/Seo.jsx'
 import AdminDashboardPage from '../pages/AdminDashboardPage.jsx'
 import AdminMessagesPage from '../pages/AdminMessagesPage.jsx'
 import AdminReportsPage from '../pages/AdminReportsPage.jsx'
@@ -40,6 +41,7 @@ import UnauthorizedPage from '../pages/UnauthorizedPage.jsx'
 function AppRouter() {
   return (
     <BrowserRouter>
+      <RouteSeo />
       <MainLayout>
         <Routes>
           <Route path="/" element={<HomePage />} />

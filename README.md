@@ -451,7 +451,11 @@ Deploy `frontend/` as the Vite app root and configure:
 
 ```text
 VITE_API_URL=https://<backend-domain>/api/v1
+VITE_SITE_URL=https://<frontend-domain>
 ```
+
+The frontend build uses `VITE_SITE_URL` to generate `sitemap.xml` and the sitemap
+reference in `robots.txt`. See [the SEO checklist](docs/seo.md) for verification.
 
 ## License
 

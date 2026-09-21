@@ -4,6 +4,7 @@ import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
 import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
 import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
+import Seo from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListings, fetchSavedListings, saveListing, unsaveListing } from '../services/api.js'
 import { applyListingFilters, emptyListingFilters } from '../utils/listingFilters.js'
@@ -111,6 +112,11 @@ function ListingsPage() {
 
   return (
     <>
+      <Seo title="Browse cat listings" description="Browse available cats and kittens from breeders on Purrfect Match." />
+      <header className="mx-auto mb-8 w-full max-w-6xl">
+        <h1 className="text-2xl font-semibold text-slate-950">Cat listings</h1>
+        <p className="mt-2 text-sm text-slate-600">Browse available cats and narrow the catalogue by breed, location and more.</p>
+      </header>
       <div className="mx-auto w-full max-w-6xl space-y-10">
         <CustomerSearchBar filters={filters} listings={listings} onChange={setQuery} onFiltersChange={setFilters} value={query} />
         {!currentUser ? (
