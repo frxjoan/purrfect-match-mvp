@@ -183,18 +183,21 @@ export function ConversationList({ activeConversation, conversations, currentUse
   return (
     <aside className="border-b border-black/10 bg-white/90 p-4 lg:border-b-0 lg:border-r">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-lg font-bold text-slate-950">Messages</h1>
+        <h2 className="text-lg font-bold text-slate-950">Messages</h2>
         {conversations.some((conversation) => hasUnread(conversation, currentUser)) ? <NotificationBadge show /> : null}
       </div>
+      <label className="sr-only" htmlFor="conversation-search">Search conversations</label>
       <input
+        id="conversation-search"
+        type="search"
         className="mt-4 w-full rounded-full border border-black bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#c9bfff]"
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Search conversations..."
         value={query}
       />
       <div className="mt-4 space-y-2">
-        {isLoading ? <p className="rounded-lg bg-[#f8f7fb] p-4 text-sm text-slate-500">Loading conversations...</p> : null}
-        {!isLoading && conversations.length === 0 ? <p className="rounded-lg bg-[#f8f7fb] p-4 text-sm text-slate-500">No conversations match your search.</p> : null}
+        {isLoading ? <p className="rounded-lg bg-[#f8f7fb] p-4 text-sm text-slate-600">Loading conversations...</p> : null}
+        {!isLoading && conversations.length === 0 ? <p className="rounded-lg bg-[#f8f7fb] p-4 text-sm text-slate-600">No conversations match your search.</p> : null}
         {conversations.map((conversation) => {
           const unread = hasUnread(conversation, currentUser)
           const avatarTarget = getConversationAvatarTarget(conversation)
@@ -203,6 +206,7 @@ export function ConversationList({ activeConversation, conversations, currentUse
             <button
               className={`grid w-full grid-cols-[2.5rem_1fr_auto] items-center gap-3 rounded-lg border p-3 text-left transition ${activeConversation?.id === conversation.id ? 'border-[#6c5ce7] bg-[#eee7ff]' : 'border-slate-200 bg-white hover:bg-[#f7f3ff]'}`}
               key={conversation.id}
+              aria-current={activeConversation?.id === conversation.id ? 'true' : undefined}
               onClick={() => onSelect(conversation)}
               type="button"
             >
@@ -212,9 +216,9 @@ export function ConversationList({ activeConversation, conversations, currentUse
                   <span className="truncate">{conversation.displayTitle}</span>
                   <NotificationBadge show={unread} />
                 </span>
-                <span className="mt-1 block truncate text-xs text-slate-500">{conversation.lastMessage || 'No messages yet'}</span>
+                <span className="mt-1 block truncate text-xs text-slate-600">{conversation.lastMessage || 'No messages yet'}</span>
               </span>
-              <span className="text-[10px] text-slate-400">{formatDateTime(conversation.updated_at)}</span>
+              <time className="text-[10px] text-slate-600" dateTime={conversation.updated_at}>{formatDateTime(conversation.updated_at)}</time>
             </button>
           )
         })}
@@ -231,14 +235,14 @@ export function MessageThread({ activeConversation, currentUser, messages, notic
       <header className="flex items-center gap-3 border-b border-black/10 p-4">
         {activeConversation ? <MessageAvatar currentUser={currentUser} label={avatarTarget.label} person={avatarTarget.person} role={avatarTarget.role} /> : null}
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold text-slate-950">{activeConversation?.displayTitle ?? 'Messages'}</h2>
-          <p className="text-xs text-slate-500">{activeConversation ? 'Conversation' : 'Select a conversation'}</p>
+          <h2 aria-atomic="true" aria-live="polite" className="truncate text-lg font-bold text-slate-950">{activeConversation?.displayTitle ?? 'Messages'}</h2>
+          <p className="text-xs text-slate-600">{activeConversation ? 'Conversation' : 'Select a conversation'}</p>
         </div>
       </header>
-      <div className="flex-1 space-y-5 overflow-y-auto bg-[#fbfbff] p-5 text-sm">
-        {notice ? <p className="rounded-lg bg-white p-3 text-center text-xs font-semibold text-[#c24b78] shadow-sm">{notice}</p> : null}
-        {!activeConversation ? <p className="rounded-lg bg-white p-4 text-center text-sm text-slate-500 shadow-sm">Choose a conversation to start messaging.</p> : null}
-        {activeConversation && messages.length === 0 ? <p className="rounded-lg bg-white p-4 text-center text-sm text-slate-500 shadow-sm">No messages yet.</p> : null}
+      {notice ? <p className="bg-[#fbfbff] p-3 text-center text-xs font-semibold text-[#a53762]" role="status">{notice}</p> : null}
+      <div aria-label="Conversation messages" aria-live="off" className="flex-1 space-y-5 overflow-y-auto bg-[#fbfbff] p-5 text-sm" role="log">
+        {!activeConversation ? <p className="rounded-lg bg-white p-4 text-center text-sm text-slate-600 shadow-sm">Choose a conversation to start messaging.</p> : null}
+        {activeConversation && messages.length === 0 ? <p className="rounded-lg bg-white p-4 text-center text-sm text-slate-600 shadow-sm">No messages yet.</p> : null}
         {messages.map((message) => {
           const isMine = message.sender_id === currentUser?.id
           const sender = getMessageSender(activeConversation, message, currentUser)
@@ -249,7 +253,7 @@ export function MessageThread({ activeConversation, currentUser, messages, notic
               {!isMine ? <MessageAvatar currentUser={currentUser} label={getPersonName(sender, 'Participant')} person={sender} role={senderRole} /> : null}
               <div className={`max-w-xs rounded-2xl px-4 py-3 shadow-sm ${isMine ? 'bg-[#6c5ce7] text-white' : 'bg-white text-slate-800'}`}>
                 <p className="whitespace-pre-line">{message.content}</p>
-                <p className={`mt-2 text-[10px] ${isMine ? 'text-white/70' : 'text-slate-400'}`}>{formatDateTime(message.created_at)}</p>
+                <time className={`mt-2 block text-[10px] ${isMine ? 'text-white' : 'text-slate-600'}`} dateTime={message.created_at}>{formatDateTime(message.created_at)}</time>
               </div>
             </div>
           )
@@ -262,7 +266,9 @@ export function MessageThread({ activeConversation, currentUser, messages, notic
 export function MessageComposer({ activeConversation, isSending, message, onSubmit, setMessage }) {
   return (
     <form className="flex gap-2 border-t border-black/10 bg-white p-4" onSubmit={onSubmit}>
+      <label className="sr-only" htmlFor="message-composer">Your message</label>
       <input
+        id="message-composer"
         className="min-h-11 flex-1 rounded-full border border-black bg-white px-4 text-sm outline-none focus:ring-2 focus:ring-[#c9bfff] disabled:cursor-not-allowed disabled:bg-slate-100"
         disabled={!activeConversation || isSending}
         onChange={(event) => setMessage(event.target.value)}
@@ -345,6 +351,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState([])
   const [notice, setNotice] = useState('')
+  const [sendStatus, setSendStatus] = useState('')
   const [query, setQuery] = useState('')
   const activeRole = getActiveRole(currentUser, preferredRole)
   const visibleConversations = useMemo(() => conversations.map((conversation) => applyConversationPerspective(conversation, activeRole)), [activeRole, conversations])
@@ -446,6 +453,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
     }
 
     setIsSending(true)
+    setSendStatus('')
     try {
       const data = await sendConversationMessage(activeConversation.id, message.trim())
       const nextMessages = [...messages, data.message]
@@ -457,6 +465,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
       })
       setMessage('')
       setNotice('')
+      setSendStatus('Message sent.')
     } catch (error) {
       setNotice(error.response?.data?.error?.message ?? 'Message could not be sent.')
     } finally {
@@ -470,6 +479,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
     setConversations(nextConversations)
     setActiveConversation(readConversation)
     setMessages(readConversation.messages ?? [])
+    setSendStatus('')
     publishUnreadState(nextConversations, currentUser)
   }
 
@@ -484,6 +494,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
         <ConversationList activeConversation={activeConversation} conversations={filteredConversations} currentUser={currentUser} isLoading={isLoading} onSelect={handleSelectConversation} query={query} setQuery={setQuery} />
         <div className="flex min-h-[36rem] flex-col">
           <MessageThread activeConversation={activeConversation} currentUser={currentUser} messages={messages} notice={notice} />
+          <p className="sr-only" role="status">{sendStatus}</p>
           <MessageComposer activeConversation={activeConversation} isSending={isSending} message={message} onSubmit={handleSubmit} setMessage={setMessage} />
         </div>
       </div>

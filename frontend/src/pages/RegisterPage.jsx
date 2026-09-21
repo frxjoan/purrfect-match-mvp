@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import { registerUser } from '../services/api.js'
@@ -36,6 +36,13 @@ function RegisterPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
+  const [noticeIsError, setNoticeIsError] = useState(false)
+  const fieldRefs = useRef({})
+  const noticeRef = useRef(null)
+
+  useEffect(() => {
+    if (notice && noticeIsError) noticeRef.current?.focus()
+  }, [notice, noticeIsError])
 
   /**
    * Updates a controlled register input and clears stale errors.
@@ -71,6 +78,8 @@ function RegisterPage() {
 
     if (!form.email.trim()) {
       nextErrors.email = 'Email is required.'
+    } else if (fieldRefs.current.email?.validity.typeMismatch) {
+      nextErrors.email = 'Enter a valid email address.'
     }
 
     if (!form.password.trim()) {
@@ -80,7 +89,9 @@ function RegisterPage() {
     }
 
     setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+    const firstInvalid = ['accountType', 'firstName', 'lastName', 'email', 'password'].find((field) => nextErrors[field])
+    if (firstInvalid) fieldRefs.current[firstInvalid]?.focus()
+    return !firstInvalid
   }
 
   /**
@@ -107,9 +118,11 @@ function RegisterPage() {
         last_name: form.lastName.trim(),
         role: form.accountType,
       })
+      setNoticeIsError(false)
       setNotice('Account created. You can now sign in.')
       setForm(emptyForm)
     } catch (error) {
+      setNoticeIsError(true)
       setNotice(error.response?.data?.error?.message ?? 'Registration failed. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -123,18 +136,22 @@ function RegisterPage() {
           ←
         </button>
         <h1 className="text-center text-xl font-semibold text-slate-950">Create account</h1>
-        <fieldset className="mt-5">
-          <legend className="text-sm font-semibold text-slate-700">Account type</legend>
+        <fieldset aria-describedby={errors.accountType ? "register-account-type-error" : undefined} aria-invalid={Boolean(errors.accountType)} className="mt-5">
+          <legend className="text-sm font-semibold text-slate-700">Account type (required)</legend>
           <div className="mt-2 grid grid-cols-2 gap-3">
             {accountTypes.map((accountType) => (
               <label
-                className={`flex cursor-pointer items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition ${form.accountType === accountType.value ? 'border-[#6c5ce7] bg-[#6c5ce7] text-white' : 'border-black bg-white text-slate-800 hover:bg-[#f7f3ff]'}`}
+                className={`flex cursor-pointer items-center justify-center rounded-lg border px-4 py-3 text-sm font-semibold transition focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 ${form.accountType === accountType.value ? 'border-[#6c5ce7] bg-[#6c5ce7] text-white' : 'border-black bg-white text-slate-800 hover:bg-[#f7f3ff]'}`}
                 key={accountType.value}
               >
                 <input
+                  aria-describedby={errors.accountType ? "register-account-type-error" : undefined}
+                  aria-invalid={Boolean(errors.accountType)}
                   checked={form.accountType === accountType.value}
                   className="sr-only"
                   name="accountType"
+                  ref={accountType.value === 'customer' ? (element) => { fieldRefs.current.accountType = element } : undefined}
+                  required
                   onChange={() => updateForm('accountType', accountType.value)}
                   type="radio"
                   value={accountType.value}
@@ -143,7 +160,7 @@ function RegisterPage() {
               </label>
             ))}
           </div>
-          {errors.accountType ? <span className="mt-1 block text-xs font-semibold text-[#c24b78]">{errors.accountType}</span> : null}
+          {errors.accountType ? <span className="mt-1 block text-xs font-semibold text-rose-700" id="register-account-type-error">{errors.accountType}</span> : null}
         </fieldset>
         {[
           ['firstName', 'First name', 'text'],
@@ -151,21 +168,29 @@ function RegisterPage() {
           ['email', 'Email', 'email'],
           ['password', 'Password', 'password'],
         ].map(([field, label, type]) => (
-          <label key={field} className="mt-4 block">
-            <span className="text-sm font-semibold text-slate-700">{label}</span>
+          <div key={field} className="mt-4">
+            <label className="text-sm font-semibold text-slate-700" htmlFor={"register-" + field}>{label} (required)</label>
             <input
+              id={"register-" + field}
               className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-[#d8d1ff]"
+              aria-describedby={[field === 'password' ? 'register-password-help' : null, errors[field] ? "register-" + field + "-error" : null].filter(Boolean).join(' ') || undefined}
+              aria-invalid={Boolean(errors[field])}
+              autoComplete={{ firstName: 'given-name', lastName: 'family-name', email: 'email', password: 'new-password' }[field]}
               onChange={(event) => updateForm(field, event.target.value)}
+              ref={(element) => { fieldRefs.current[field] = element }}
+              required
               type={type}
+              minLength={field === 'password' ? 8 : undefined}
               value={form[field]}
             />
-            {errors[field] ? <span className="mt-1 block text-xs font-semibold text-[#c24b78]">{errors[field]}</span> : null}
-          </label>
+            {field === 'password' ? <span className="mt-1 block text-xs text-slate-700" id="register-password-help">At least 8 characters.</span> : null}
+            {errors[field] ? <span className="mt-1 block text-xs font-semibold text-rose-700" id={"register-" + field + "-error"}>{errors[field]}</span> : null}
+          </div>
         ))}
         <ActionButton className="mt-6 w-full" disabled={isSubmitting} type="submit">
           {isSubmitting ? 'Creating account...' : 'Create account'}
         </ActionButton>
-        {notice ? <p className="mt-4 text-center text-sm font-semibold text-[#6c5ce7]">{notice}</p> : null}
+        {notice ? <p className="mt-4 text-center text-sm font-semibold text-slate-800" ref={noticeRef} role={noticeIsError ? "alert" : "status"} tabIndex={noticeIsError ? -1 : undefined}>{notice}</p> : null}
       </form>
     </section>
   )

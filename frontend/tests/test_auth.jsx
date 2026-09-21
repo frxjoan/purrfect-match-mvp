@@ -82,8 +82,14 @@ describe('login and register pages', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in Customer' }))
     await user.click(screen.getByRole('button', { name: 'Login as Customer' }))
 
-    expect(screen.getByText('Email is required.')).toBeInTheDocument()
-    expect(screen.getByText('Password is required.')).toBeInTheDocument()
+    const email = screen.getByRole('textbox', { name: 'Email (required)' })
+    const password = screen.getByLabelText('Password (required)')
+    expect(email).toHaveFocus()
+    expect(email).toBeRequired()
+    expect(password).toBeRequired()
+    expect(email).toHaveAttribute('aria-invalid', 'true')
+    expect(email).toHaveAccessibleDescription('Email is required.')
+    expect(password).toHaveAccessibleDescription('Password is required.')
     expect(loginUser).not.toHaveBeenCalled()
 
     loginUser.mockResolvedValueOnce({ token: 'token', user: { id: 4, email: 'alice@test.dev', role: 'customer' } })
@@ -94,6 +100,28 @@ describe('login and register pages', () => {
 
     await waitFor(() => expect(loginUser).toHaveBeenCalledWith({ email: 'alice@test.dev', password: 'secret123' }))
     expect(await screen.findByText('Home page')).toBeInTheDocument()
+  })
+
+  it('keeps invalid email feedback on the login field', async () => {
+    const user = userEvent.setup()
+    render(
+      <AuthProvider>
+        <MemoryRouter initialEntries={['/login']}>
+          <LoginPage />
+        </MemoryRouter>
+      </AuthProvider>,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Sign in Customer' }))
+    const email = screen.getByRole('textbox', { name: 'Email (required)' })
+    await user.type(email, 'invalid-email')
+    await user.type(screen.getByLabelText('Password (required)'), 'secret123')
+    await user.click(screen.getByRole('button', { name: 'Login as Customer' }))
+
+    expect(email).toHaveFocus()
+    expect(email).toHaveAttribute('aria-invalid', 'true')
+    expect(email).toHaveAccessibleDescription('Enter a valid email address.')
+    expect(loginUser).not.toHaveBeenCalled()
   })
 
   it('redirects unverified breeders to certification after login', async () => {
@@ -180,6 +208,8 @@ describe('login and register pages', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     expect(screen.getByText('Choose Customer or Breeder.')).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Customer' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Customer' })).toHaveAccessibleDescription('Choose Customer or Breeder.')
     expect(registerUser).not.toHaveBeenCalled()
   })
 
@@ -197,10 +227,10 @@ describe('login and register pages', () => {
     )
 
     await user.click(screen.getByLabelText('Breeder'))
-    await user.type(screen.getByLabelText('First name'), 'Alice')
-    await user.type(screen.getByLabelText('Last name'), 'Breeder')
-    await user.type(screen.getByLabelText('Email'), 'alice@test.dev')
-    await user.type(screen.getByLabelText('Password'), 'secret123')
+    await user.type(screen.getByLabelText('First name (required)'), 'Alice')
+    await user.type(screen.getByLabelText('Last name (required)'), 'Breeder')
+    await user.type(screen.getByLabelText('Email (required)'), 'alice@test.dev')
+    await user.type(screen.getByLabelText('Password (required)'), 'secret123')
     await user.click(screen.getByRole('button', { name: 'Create account' }))
 
     await waitFor(() => expect(registerUser).toHaveBeenCalledWith({

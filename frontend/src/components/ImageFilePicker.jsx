@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
@@ -8,7 +8,7 @@ function formatFileSize(bytes) {
 }
 
 function ImageFilePicker({ existingImageUrl = '', files = [], helperText = '', multiple = false, onFilesChange, showPreview = true }) {
-  const inputRef = useRef(null)
+  const inputId = useId()
   const [error, setError] = useState('')
   const previews = useMemo(() => files.map((file) => ({ file, url: URL.createObjectURL(file) })), [files])
 
@@ -41,31 +41,27 @@ function ImageFilePicker({ existingImageUrl = '', files = [], helperText = '', m
 
   return (
     <div className="grid gap-3">
-      <div className="flex flex-col items-center gap-2">
-        <button
-          className="rounded-full border border-black bg-[#ff7bac] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ff5f9d]"
-          onClick={() => inputRef.current?.click()}
-          type="button"
-        >
-          Choose file
-        </button>
-        <span className="text-center text-xs font-medium text-slate-500">JPG, JPEG, PNG, WEBP. Max 5 MB.</span>
-      </div>
+      <label className="text-sm font-semibold text-slate-800" htmlFor={inputId}>
+        {multiple ? 'Choose images' : 'Choose an image'}
+      </label>
       <input
-        accept="image/jpeg,image/jpg,image/png,image/webp"
-        className="sr-only"
+        accept="image/jpeg,image/png,image/webp"
+        aria-describedby={[inputId + '-instructions', helperText ? inputId + '-help' : null, error ? inputId + '-error' : null].filter(Boolean).join(' ')}
+        aria-invalid={Boolean(error)}
+        className="block w-full text-sm text-slate-900 file:mr-3 file:rounded file:border file:border-black file:bg-[#ff7bac] file:px-4 file:py-2 file:font-semibold file:text-slate-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900"
+        id={inputId}
         multiple={multiple}
         onChange={chooseFiles}
-        ref={inputRef}
         type="file"
       />
-      {helperText ? <p className="text-xs text-slate-500">{helperText}</p> : null}
-      {error ? <p className="text-sm font-semibold text-rose-700">{error}</p> : null}
+      <p className="text-xs text-slate-700" id={inputId + '-instructions'}>JPG, JPEG, PNG, WEBP. Max 5 MB per image.</p>
+      {helperText ? <p className="text-xs text-slate-700" id={inputId + '-help'}>{helperText}</p> : null}
+      {error ? <p className="text-sm font-semibold text-rose-700" id={inputId + '-error'} role="alert">{error}</p> : null}
       {showPreview && previews.length ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {previews.map((preview) => (
             <figure className="overflow-hidden rounded-lg border border-slate-200 bg-white" key={`${preview.file.name}-${preview.file.lastModified}`}>
-              <img alt="Selected preview" className="h-32 w-full object-cover" src={preview.url} />
+              <img alt="" className="h-32 w-full object-cover" src={preview.url} />
               <figcaption className="truncate px-3 py-2 text-xs text-slate-600">{preview.file.name}</figcaption>
             </figure>
           ))}

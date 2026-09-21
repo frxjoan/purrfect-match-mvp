@@ -74,8 +74,8 @@ function AdminDashboardPage() {
       />
       <section className="grid gap-4 md:grid-cols-3">
         {stats.map((stat) => <StatCard key={stat.label} {...stat} />)}
-        {isLoading ? <p className="text-sm font-semibold text-slate-400 md:col-span-3">Loading admin data...</p> : null}
-        {notice ? <p className="text-sm font-semibold text-amber-700 md:col-span-3">{notice}</p> : null}
+        {isLoading ? <p className="text-sm font-semibold text-slate-600 md:col-span-3">Loading admin data...</p> : null}
+        {notice ? <p role="status" className="text-sm font-semibold text-amber-700 md:col-span-3">{notice}</p> : null}
       </section>
       <section className="grid gap-5 lg:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -87,7 +87,7 @@ function AdminDashboardPage() {
                   <p className="truncate font-semibold text-slate-950">{breeder.business_name}</p>
                   <p className="text-sm text-slate-500">{breeder.location} - {breeder.certification_status}</p>
                 </div>
-                <ActionButton to={`/admin/verifications/${breeder.id}`} variant="secondary">Review</ActionButton>
+                <ActionButton aria-label={`Review ${breeder.business_name}`} to={`/admin/verifications/${breeder.id}`} variant="secondary">Review</ActionButton>
               </div>
             )) : <p className="text-sm text-slate-500">No pending breeder applications.</p>}
           </div>
@@ -102,7 +102,7 @@ function AdminDashboardPage() {
                   <p className="font-semibold text-slate-950">Listing #{report.listing_id}</p>
                   <p className="text-sm text-slate-500">{report.reason} - {report.status}</p>
                 </div>
-                <ActionButton to={`/admin/reports/${report.id}`} variant="secondary">Open</ActionButton>
+                <ActionButton aria-label={`Open report for listing ${report.listing_id}`} to={`/admin/reports/${report.id}`} variant="secondary">Open</ActionButton>
               </div>
             )) : <p className="text-sm text-slate-500">No reports in the moderation queue.</p>}
           </div>

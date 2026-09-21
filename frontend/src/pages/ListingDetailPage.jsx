@@ -85,9 +85,14 @@ function ListingDetailPage() {
     }
   }
 
-  function handleShare() {
-    navigator.clipboard?.writeText(window.location.href)
-    setNotice('Listing link copied.')
+  async function handleShare() {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
+      await navigator.clipboard.writeText(window.location.href)
+      setNotice('Listing link copied.')
+    } catch {
+      setNotice('Listing link could not be copied.')
+    }
   }
 
   function showPreviousImage() {
@@ -100,7 +105,7 @@ function ListingDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-xl rounded-xl border border-black bg-white p-8 text-center">
+      <div className="mx-auto max-w-xl rounded-xl border border-black bg-white p-8 text-center" role="status">
         <h1 className="text-2xl font-semibold">Loading announcement...</h1>
       </div>
     )
@@ -110,7 +115,7 @@ function ListingDetailPage() {
     return (
       <div className="mx-auto max-w-xl rounded-xl border border-black bg-white p-8 text-center">
         <h1 className="text-2xl font-semibold">Listing not found</h1>
-        <p className="mt-3 text-sm">{loadError || 'This announcement is unavailable.'}</p>
+        <p className="mt-3 text-sm" role="alert">{loadError || 'This announcement is unavailable.'}</p>
       </div>
     )
   }
@@ -132,20 +137,20 @@ function ListingDetailPage() {
       ) : null}
       <section className="mx-auto w-full max-w-5xl rounded-xl border border-black bg-[#fbfbff] p-5">
         <button className="mb-2 text-sm font-semibold" onClick={() => navigate(-1)} type="button">Back</button>
-        {loadError ? <div className="mb-4 rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]">{loadError}</div> : null}
+        {loadError ? <div className="mb-4 rounded-xl border border-black bg-white p-3 text-center text-xs text-[#6c5ce7]" role="alert">{loadError}</div> : null}
         <div className="rounded-xl border border-black bg-white p-4">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
-            <button className="text-3xl text-slate-900 disabled:opacity-30" disabled={activeImageIndex === 0} onClick={showPreviousImage} type="button">&lt;</button>
+            <button aria-label="Previous image" className="text-3xl text-slate-900 disabled:opacity-30" disabled={activeImageIndex === 0} onClick={showPreviousImage} type="button">&lt;</button>
             {activeImage ? (
-              <img alt={`${listing.name} ${listing.breed}`} className="mx-auto h-56 w-full max-w-lg rounded-lg object-cover" src={activeImage} />
+              <img alt={`${listing.name || listing.title}${listing.breed ? `, ${listing.breed}` : ''}`} className="mx-auto h-56 w-full max-w-lg rounded-lg object-cover" src={activeImage} />
             ) : (
               <div className="mx-auto flex h-56 w-full max-w-lg items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500">
                 No photo available
               </div>
             )}
-            <button className="text-3xl text-slate-900 disabled:opacity-30" disabled={activeImageIndex >= listingImages.length - 1} onClick={showNextImage} type="button">&gt;</button>
+            <button aria-label="Next image" className="text-3xl text-slate-900 disabled:opacity-30" disabled={activeImageIndex >= listingImages.length - 1} onClick={showNextImage} type="button">&gt;</button>
           </div>
-          {listingImages.length ? <p className="mt-2 text-right text-xs text-slate-600">{activeImageIndex + 1}/{listingImages.length}</p> : null}
+          {listingImages.length ? <p aria-live="polite" className="mt-2 text-right text-xs text-slate-600">Image {activeImageIndex + 1} of {listingImages.length}</p> : null}
         </div>
         <div className="mt-4 grid gap-6 md:grid-cols-[0.85fr_1.15fr]">
           <aside className="space-y-3 text-sm">
@@ -183,9 +188,9 @@ function ListingDetailPage() {
               <ActionButton onClick={handleShare} variant="secondary">Share</ActionButton>
             </div>
             {listing.breederId ? <ActionButton className="w-full" to={`/breeders/${listing.breederId}`} variant="secondary">View breeder profile</ActionButton> : null}
-            <ActionButton className="w-full bg-[#ff7bac] hover:bg-[#f4679d]" onClick={() => requireLoginOrRun(() => setShowReport(true))} variant="danger">Report this announce</ActionButton>
+            <ActionButton className="w-full bg-[#ff7bac] !text-slate-950 hover:bg-[#f4679d]" onClick={() => requireLoginOrRun(() => setShowReport(true))} variant="danger">Report this announce</ActionButton>
             {!currentUser ? <div className="rounded-xl border border-black bg-white p-3 text-center text-xs">Message and report actions require login. You will be returned here after signing in.</div> : null}
-            {notice ? <p className="text-center text-sm font-semibold text-[#6c5ce7]">{notice}</p> : null}
+            {notice ? <p className="text-center text-sm font-semibold text-[#6c5ce7]" role="status">{notice}</p> : null}
           </section>
         </div>
       </section>

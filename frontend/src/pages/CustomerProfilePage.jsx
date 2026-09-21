@@ -129,29 +129,29 @@ function CustomerProfilePage() {
         {isLoading ? <p className="text-sm font-semibold text-slate-500">Loading profile...</p> : null}
         <label className="block">
           <span className="text-sm font-medium text-slate-900">First name</span>
-          <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('firstName', event.target.value)} value={profile.firstName} />
+          <input autoComplete="given-name" required className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('firstName', event.target.value)} value={profile.firstName} />
         </label>
         <label className="block">
           <span className="text-sm font-medium text-slate-900">Last name</span>
-          <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('lastName', event.target.value)} value={profile.lastName} />
+          <input autoComplete="family-name" required className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('lastName', event.target.value)} value={profile.lastName} />
         </label>
         <label className="block">
           <span className="text-sm font-medium text-slate-900">Email</span>
-          <input className="mt-2 w-full rounded-xl border border-black bg-slate-100 px-4 py-2 text-slate-500" readOnly type="email" value={profile.email} />
+          <input autoComplete="email" className="mt-2 w-full rounded-xl border border-black bg-slate-100 px-4 py-2 text-slate-500" readOnly type="email" value={profile.email} />
         </label>
         <label className="block">
           <span className="text-sm font-medium text-slate-900">Location</span>
-          <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('location', event.target.value)} value={profile.location} />
+          <input autoComplete="address-level2" className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('location', event.target.value)} value={profile.location} />
         </label>
         <label className="block">
           <span className="text-sm font-medium text-slate-900">Phone number</span>
-          <input className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('phoneNumber', event.target.value)} value={profile.phoneNumber} />
+          <input autoComplete="tel" type="tel" className="mt-2 w-full rounded-xl border border-black bg-white px-4 py-2 outline-none focus:ring-2 focus:ring-[#c9bfff]" onChange={(event) => updateProfile('phoneNumber', event.target.value)} value={profile.phoneNumber} />
         </label>
         <div className="flex justify-center gap-4">
           <ActionButton onClick={() => navigate(-1)} type="button">Cancel</ActionButton>
           <ActionButton disabled={isSaving || isLoading || !profile.firstName.trim() || !profile.lastName.trim()} type="submit">{isSaving ? 'Saving...' : 'Save'}</ActionButton>
         </div>
-        {notice ? <p className="text-center text-sm font-semibold text-[#6c5ce7]">{notice}</p> : null}
+        {notice ? <p className="text-center text-sm font-semibold text-[#6c5ce7]" role="status">{notice}</p> : null}
       </section>
     </form>
   )

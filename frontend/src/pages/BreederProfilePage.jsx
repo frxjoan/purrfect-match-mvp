@@ -155,29 +155,29 @@ function BreederProfilePage() {
           </div>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">First name</span>
-            <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateAccount('firstName', event.target.value)} value={accountProfile.firstName} />
+            <input autoComplete="given-name" required className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateAccount('firstName', event.target.value)} value={accountProfile.firstName} />
           </label>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Last name</span>
-            <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateAccount('lastName', event.target.value)} value={accountProfile.lastName} />
+            <input autoComplete="family-name" required className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateAccount('lastName', event.target.value)} value={accountProfile.lastName} />
           </label>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Email</span>
-            <input className="mt-2 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-3 text-slate-500" readOnly type="email" value={accountProfile.email} />
+            <input autoComplete="email" className="mt-2 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-3 text-slate-500" readOnly type="email" value={accountProfile.email} />
           </label>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Phone number</span>
-            <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateAccount('phoneNumber', event.target.value)} value={accountProfile.phoneNumber} />
+            <input autoComplete="tel" type="tel" className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateAccount('phoneNumber', event.target.value)} value={accountProfile.phoneNumber} />
           </label>
         </section>
         <section className="grid content-start gap-4">
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Business name</span>
-            <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateBreeder('business_name', event.target.value)} value={breederProfile.business_name} />
+            <input autoComplete="organization" required className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateBreeder('business_name', event.target.value)} value={breederProfile.business_name} />
           </label>
           <label className="block">
             <span className="text-sm font-semibold text-slate-700">Location</span>
-            <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => {
+            <input autoComplete="address-level2" required className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => {
               updateBreeder('location', event.target.value)
               updateAccount('location', event.target.value)
             }} value={breederProfile.location || accountProfile.location} />
@@ -191,7 +191,7 @@ function BreederProfilePage() {
               {isSaving ? 'Saving...' : 'Save profile'}
             </ActionButton>
           </div>
-          {notice ? <p className="text-sm font-semibold text-teal-700">{notice}</p> : null}
+          {notice ? <p role="status" className="text-sm font-semibold text-teal-700">{notice}</p> : null}
         </section>
       </form>
     </>

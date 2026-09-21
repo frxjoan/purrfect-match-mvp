@@ -37,14 +37,15 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
         {listing.age ? <p className="text-slate-800">{listing.age}</p> : null}
         <p className="truncate text-slate-800">{listing.location}</p>
         <p className="font-semibold text-slate-950">{listing.price.toLocaleString()} EUR</p>
-        <ActionButton className="mt-2 min-h-8 px-3 py-1 text-xs" to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
+        <ActionButton aria-label={`Open listing for ${listing.name || listing.title}`} className="mt-2 min-h-8 px-3 py-1 text-xs" to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
       </div>
       <div className="flex flex-col items-end justify-between">
         {listing.status ? <span className="rounded-full bg-[#f7f3ff] px-2 py-1 text-[10px] text-slate-700">{listing.status}</span> : null}
         <div className="flex flex-col items-end gap-2">
           {onToggleSave ? (
             <button
-              aria-label={isSaved ? 'Unsave listing' : 'Save listing'}
+              aria-label={`Save listing for ${listing.name || listing.title}`}
+              aria-pressed={isSaved}
               className="rounded-full border border-black bg-white px-2 py-1 text-[11px] font-semibold"
               onClick={() => onToggleSave(listing.id)}
               type="button"
@@ -53,7 +54,7 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
             </button>
           ) : null}
           {onReport ? (
-            <button className="text-[11px] text-[#ff5f98] underline" onClick={() => onReport(listing)} type="button">
+            <button aria-label={`Report listing for ${listing.name || listing.title}`} className="text-[11px] text-[#9c204f] underline" onClick={() => onReport(listing)} type="button">
               Report
             </button>
           ) : null}

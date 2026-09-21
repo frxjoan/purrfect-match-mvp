@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import customerIcon from '../assets/icon/customer-icon.png'
@@ -196,6 +196,10 @@ function NavigationLinks({ hasUnreadMessages = false, navigation, onNavigate }) 
 function MainLayout({ children }) {
   const { currentUser, signOut } = useAuth()
   const navigate = useNavigate()
+  const roleMenuId = useId()
+  const profileMenuId = useId()
+  const roleButtonRef = useRef(null)
+  const profileButtonRef = useRef(null)
   const [activeInterface, setActiveInterface] = useState(getStoredInterface)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false)
@@ -309,20 +313,23 @@ function MainLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-[#eee7ff] text-slate-950">
+      <a className="skip-link" href="#main-content">Skip to main content</a>
       <header className="sticky top-0 z-30 border-b border-black/10 bg-[#fbfbff]">
         <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-2 md:px-8">
           <NavLink className="relative z-10 flex h-24 w-44 items-center justify-start sm:h-28 sm:w-52" to="/" aria-label="Purrfect Match home">
             <img alt="Purrfect Match" className="h-24 w-auto object-contain sm:h-28" src={logoImage} />
           </NavLink>
           <NavLink className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-xl font-medium leading-tight" to="/">
-            <span className="block text-[#5c63ff]">Purrfect</span>
-            <span className="block text-[#ff7bac]">Match</span>
+            <span className="block text-[#4b50d2]">Purrfect</span>
+            <span className="block text-[#a52656]">Match</span>
           </NavLink>
           <div className="relative z-10 flex items-center gap-2">
             {currentUser ? (
-              <div className="relative">
+              <div className="relative" onKeyDown={(event) => { if (event.key === 'Escape') { setIsRoleMenuOpen(false); roleButtonRef.current?.focus() } }}>
                 <button
+                  aria-controls={roleMenuId}
                   aria-expanded={isRoleMenuOpen}
+                  ref={roleButtonRef}
                   aria-label="Switch active interface"
                   className="flex h-11 items-center gap-2 rounded-full border border-black bg-white px-2.5 py-1.5 shadow-sm transition hover:bg-[#f7f3ff]"
                   onClick={() => {
@@ -337,7 +344,7 @@ function MainLayout({ children }) {
                   <span className="hidden text-xs font-semibold text-slate-800 sm:inline">{activeOption.label}</span>
                   <span className={`h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent border-t-[#6c5ce7] transition-transform ${isRoleMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-                <div
+                <div hidden={!isRoleMenuOpen} id={roleMenuId}
                   className={[
                     'absolute right-0 top-14 z-40 w-56 origin-top-right rounded-lg border border-black bg-[#f8f7fb] p-3 shadow-xl transition duration-150',
                     isRoleMenuOpen ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
@@ -350,6 +357,7 @@ function MainLayout({ children }) {
                           'flex items-center gap-3 rounded-full border border-black px-3 py-2 text-left text-xs font-semibold transition',
                           resolvedInterface === option.value ? 'bg-[#6c5ce7] text-white' : 'bg-white text-slate-900 hover:bg-[#f7f3ff]',
                         ].join(' ')}
+                        aria-pressed={resolvedInterface === option.value}
                         key={option.value}
                         onClick={() => switchInterface(option)}
                         type="button"
@@ -362,9 +370,11 @@ function MainLayout({ children }) {
                 </div>
               </div>
             ) : null}
-            <div className="relative">
+            <div className="relative" onKeyDown={(event) => { if (event.key === 'Escape') { setIsProfileMenuOpen(false); profileButtonRef.current?.focus() } }}>
               <button
+                aria-controls={profileMenuId}
                 aria-expanded={isProfileMenuOpen}
+                ref={profileButtonRef}
                 aria-label="Open profile menu"
                 className="grid h-12 w-12 place-items-center rounded-full border border-black bg-white shadow-sm transition hover:bg-[#f7f3ff]"
                 onClick={() => {
@@ -376,14 +386,14 @@ function MainLayout({ children }) {
                 {avatarImage ? (
                   <img alt="Profile" className="h-10 w-10 rounded-full object-cover" src={avatarImage} />
                 ) : currentUser ? (
-                  <span className="grid h-10 w-10 place-items-center rounded-full bg-[#eee7ff] text-xs font-bold text-[#6c5ce7]">{avatarInitials}</span>
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-[#eee7ff] text-xs font-bold text-[#553ba8]">{avatarInitials}</span>
                 ) : (
                   <img alt="Customer" className="h-10 w-10 rounded-full object-contain" src={customerIcon} />
                 )}
               </button>
               {isProfileMenuOpen ? (
-                <div className="absolute right-0 top-14 z-40 w-64 rounded-lg border border-black bg-[#f8f7fb] p-4 shadow-xl">
-                  <nav className="grid gap-3">
+                <div id={profileMenuId} className="absolute right-0 top-14 z-40 w-64 rounded-lg border border-black bg-[#f8f7fb] p-4 shadow-xl">
+                  <nav aria-label="Profile navigation" className="grid gap-3">
                     <NavigationLinks hasUnreadMessages={hasUnreadMessages} navigation={profileMenu} onNavigate={() => setIsProfileMenuOpen(false)} />
                     {!currentUser ? null : (
                       <button
@@ -401,7 +411,7 @@ function MainLayout({ children }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto flex min-h-[calc(100vh-116px)] max-w-7xl flex-col gap-8 px-4 py-8 md:px-8">{children}</main>
+      <main id="main-content" tabIndex={-1} className="mx-auto flex min-h-[calc(100vh-116px)] max-w-7xl flex-col gap-8 px-4 py-8 md:px-8">{children}</main>
       <footer className="border-t border-black/50 bg-[#eee7ff] px-4 py-2 text-center text-xs text-slate-900">
         (c) 2026 Purrfect Match - Student Portfolio Project
       </footer>

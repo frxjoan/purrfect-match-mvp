@@ -98,23 +98,23 @@ function CustomerSettingsPage() {
         {isLoading ? <p className="text-sm font-semibold text-slate-500 md:col-span-2">Loading settings...</p> : null}
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">First name</span>
-          <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('first_name', event.target.value)} value={settings.first_name} />
+          <input autoComplete="given-name" required className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('first_name', event.target.value)} value={settings.first_name} />
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Last name</span>
-          <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('last_name', event.target.value)} value={settings.last_name} />
+          <input autoComplete="family-name" required className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('last_name', event.target.value)} value={settings.last_name} />
         </label>
         <label className="block md:col-span-2">
           <span className="text-sm font-semibold text-slate-700">Email</span>
-          <input className="mt-2 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-3 text-slate-500" readOnly type="email" value={settings.email} />
+          <input autoComplete="email" className="mt-2 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-3 text-slate-500" readOnly type="email" value={settings.email} />
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Location</span>
-          <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('location', event.target.value)} value={settings.location} />
+          <input autoComplete="address-level2" className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('location', event.target.value)} value={settings.location} />
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-slate-700">Phone number</span>
-          <input className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('phone_number', event.target.value)} value={settings.phone_number} />
+          <input autoComplete="tel" type="tel" className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-3" onChange={(event) => updateSetting('phone_number', event.target.value)} value={settings.phone_number} />
         </label>
         <label className="block md:col-span-2">
           <span className="text-sm font-semibold text-slate-700">Profile picture URL</span>
@@ -125,7 +125,7 @@ function CustomerSettingsPage() {
             {isSaving ? 'Saving...' : 'Save settings'}
           </ActionButton>
         </div>
-        {notice ? <p className="text-sm font-semibold text-teal-700 md:col-span-2">{notice}</p> : null}
+        {notice ? <p role="status" className="text-sm font-semibold text-teal-700 md:col-span-2">{notice}</p> : null}
       </form>
     </>
   )

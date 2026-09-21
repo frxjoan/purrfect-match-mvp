@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { countActiveListingFilters, emptyListingFilters, getListingFilterOptions } from '../utils/listingFilters.js'
 
 function CustomerSearchBar({ filters = emptyListingFilters, listings = [], onChange, onFiltersChange, value }) {
   const [draftFilters, setDraftFilters] = useState(filters)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const containerRef = useRef(null)
+  const filterButtonRef = useRef(null)
+  const filterPanelId = useId()
   const filterOptions = useMemo(() => getListingFilterOptions(listings), [listings])
   const activeFilterCount = countActiveListingFilters(filters)
 
@@ -33,42 +35,56 @@ function CustomerSearchBar({ filters = emptyListingFilters, listings = [], onCha
   function applyFilters() {
     onFiltersChange?.(draftFilters)
     setIsFilterOpen(false)
+    filterButtonRef.current?.focus()
   }
 
   function clearFilters() {
     setDraftFilters(emptyListingFilters)
     onFiltersChange?.(emptyListingFilters)
     setIsFilterOpen(false)
+    filterButtonRef.current?.focus()
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === 'Escape' && isFilterOpen) {
+      event.preventDefault()
+      setIsFilterOpen(false)
+      filterButtonRef.current?.focus()
+    }
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-sm" ref={containerRef}>
+    <div className="relative mx-auto w-full max-w-sm" onKeyDown={handleKeyDown} ref={containerRef}>
       <div className="flex h-9 items-center rounded-full border border-black bg-white px-2 text-sm shadow-sm">
         <button
           aria-expanded={isFilterOpen}
+          aria-controls={isFilterOpen ? filterPanelId : undefined}
           aria-label="Open listing filters"
           className="relative mr-3 grid h-9 w-9 place-items-center rounded-full text-3xl leading-none transition hover:bg-[#eee7ff]"
           onClick={() => setIsFilterOpen((isOpen) => !isOpen)}
+          ref={filterButtonRef}
           type="button"
         >
           <span aria-hidden="true">{'\uD83D\uDC3E'}</span>
           {activeFilterCount ? (
-            <span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff7bac] px-1 text-[10px] font-bold text-white">
+            <span aria-hidden="true" className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff7bac] px-1 text-[10px] font-bold text-slate-950">
               {activeFilterCount}
             </span>
           ) : null}
         </button>
         <input
-          className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
+          aria-label="Search listings"
+          className="min-w-0 flex-1 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-600"
           onChange={(event) => onChange(event.target.value)}
           placeholder="Orange cat..."
+          type="search"
           value={value}
         />
 
       </div>
 
       {isFilterOpen ? (
-        <div className="absolute left-0 right-0 top-12 z-20 rounded-xl border border-black bg-[#fbfbff] p-4 text-xs shadow-xl">
+        <div className="absolute left-0 right-0 top-12 z-20 rounded-xl border border-black bg-[#fbfbff] p-4 text-xs shadow-xl" id={filterPanelId}>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="grid gap-1">
               <span className="font-semibold text-slate-700">Breed</span>
@@ -100,11 +116,11 @@ function CustomerSearchBar({ filters = emptyListingFilters, listings = [], onCha
             </label>
             <label className="grid gap-1">
               <span className="font-semibold text-slate-700">Min price</span>
-              <input className="rounded-lg border border-black bg-white px-3 py-2" min="0" onChange={(event) => updateDraft('minPrice', event.target.value)} placeholder="0" type="number" value={draftFilters.minPrice} />
+              <input className="rounded-lg border border-black bg-white px-3 py-2 placeholder:text-slate-600" min="0" onChange={(event) => updateDraft('minPrice', event.target.value)} placeholder="0" type="number" value={draftFilters.minPrice} />
             </label>
             <label className="grid gap-1">
               <span className="font-semibold text-slate-700">Max price</span>
-              <input className="rounded-lg border border-black bg-white px-3 py-2" min="0" onChange={(event) => updateDraft('maxPrice', event.target.value)} placeholder="2500" type="number" value={draftFilters.maxPrice} />
+              <input className="rounded-lg border border-black bg-white px-3 py-2 placeholder:text-slate-600" min="0" onChange={(event) => updateDraft('maxPrice', event.target.value)} placeholder="2500" type="number" value={draftFilters.maxPrice} />
             </label>
           </div>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">

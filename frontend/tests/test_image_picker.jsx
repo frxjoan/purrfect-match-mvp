@@ -8,9 +8,13 @@ describe('ImageFilePicker', () => {
     const user = userEvent.setup()
     const onFilesChange = vi.fn()
     const file = new File(['cat'], 'cat.png', { type: 'image/png' })
-    const { container } = render(<ImageFilePicker files={[]} onFilesChange={onFilesChange} />)
+    render(<ImageFilePicker files={[]} helperText="Upload a clear photo." onFilesChange={onFilesChange} />)
 
-    await user.upload(container.querySelector('input[type="file"]'), file)
+    const input = screen.getByLabelText('Choose an image')
+    expect(input).toHaveAccessibleDescription('JPG, JPEG, PNG, WEBP. Max 5 MB per image. Upload a clear photo.')
+    await user.tab()
+    expect(input).toHaveFocus()
+    await user.upload(input, file)
 
     expect(onFilesChange).toHaveBeenCalledWith([file])
   })
@@ -22,7 +26,10 @@ describe('ImageFilePicker', () => {
 
     fireEvent.change(container.querySelector('input[type="file"]'), { target: { files: [file] } })
 
-    expect(screen.getByText('Choose a JPG, JPEG, PNG, or WEBP image.')).toBeInTheDocument()
+    const input = screen.getByLabelText('Choose an image')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(input).toHaveAccessibleDescription('JPG, JPEG, PNG, WEBP. Max 5 MB per image. Choose a JPG, JPEG, PNG, or WEBP image.')
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose a JPG, JPEG, PNG, or WEBP image.')
     expect(onFilesChange).toHaveBeenCalledWith([])
   })
 

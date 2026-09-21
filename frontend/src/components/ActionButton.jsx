@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 const variants = {
   primary: 'border border-[#4634b6] bg-[#6c5ce7] text-white hover:bg-[#5c4ed1] focus:ring-[#d8d1ff]',
   secondary: 'border border-black bg-white text-slate-900 hover:bg-[#f7f3ff] focus:ring-[#d8d1ff]',
-  danger: 'border border-[#c24b78] bg-[#ff7bac] text-white hover:bg-[#f4679d] focus:ring-[#ffd4e5]',
+  danger: 'border border-[#c24b78] bg-[#ff7bac] text-slate-950 hover:bg-[#f4679d] focus:ring-[#ffd4e5]',
   muted: 'border border-slate-300 bg-slate-100 text-slate-500',
 }
 
