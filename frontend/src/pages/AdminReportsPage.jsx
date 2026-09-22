@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { deleteAdminListing, fetchAdminReports, fetchListingById, restrictAdminUser, reviewAdminReport } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 const reasonLabels = {
   animal_abuse_or_neglect: 'Animal abuse or neglect',
@@ -92,6 +93,7 @@ function getSuspensionExpiry(days) {
 }
 
 function AdminReportsPage() {
+  usePageTitle('Admin reports')
   const { reportId } = useParams()
   const [listingDetailsById, setListingDetailsById] = useState({})
   const [moderationReports, setModerationReports] = useState([])

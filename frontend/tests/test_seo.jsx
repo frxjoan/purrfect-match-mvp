@@ -49,13 +49,13 @@ describe('public SEO', () => {
       </MemoryRouter>,
     )
 
-    expect(document.title).toBe('Find your cat | Purrfect Match')
+    expect(document.title).toBe('Purrfect Match - Find your cat')
     expect(canonical()).toBe(new URL('/', window.location.origin).href)
     expect(meta('robots')).toBe('index,follow')
     expect(document.head.querySelector('meta[property="og:title"]')?.content).toBe(document.title)
 
     await user.click(screen.getByRole('link', { name: 'Listings' }))
-    await waitFor(() => expect(document.title).toBe('Browse cat listings | Purrfect Match'))
+    await waitFor(() => expect(document.title).toBe('Purrfect Match - Browse cat listings'))
     expect(canonical()).toBe(new URL('/customer/listings', window.location.origin).href)
 
     await user.click(screen.getByRole('link', { name: 'Login' }))

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import { registerUser } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 /**
  * Initial controlled register form state.
@@ -31,6 +32,7 @@ const accountTypes = [
 
 
 function RegisterPage() {
+  usePageTitle('Create account')
   const navigate = useNavigate()
   const [form, setForm] = useState(emptyForm)
   const [errors, setErrors] = useState({})

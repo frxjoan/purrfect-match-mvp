@@ -4,8 +4,10 @@ import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchBreederProfile, fetchConversations, fetchListings } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function BreederDashboardPage() {
+  usePageTitle('Breeder dashboard')
   const { currentUser } = useAuth()
   const [breederProfile, setBreederProfile] = useState(currentUser?.breeder_profile ?? null)
   const [conversations, setConversations] = useState([])

@@ -5,6 +5,7 @@ import SectionHeader from '../components/SectionHeader.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchBreederProfile, fetchCurrentUserProfile, updateBreederProfile, updateCurrentUserProfile } from '../services/api.js'
 import { getStoredProfileImage, profileImageFileToDataUrl, setStoredProfileImage } from '../utils/profileImageStorage.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 const emptyAccountProfile = {
   email: '',
@@ -41,6 +42,7 @@ function toBreederProfile(profile) {
 }
 
 function BreederProfilePage() {
+  usePageTitle('Breeder profile')
   const { currentUser } = useAuth()
   const [accountProfile, setAccountProfile] = useState(emptyAccountProfile)
   const [breederProfile, setBreederProfile] = useState(emptyBreederProfile)

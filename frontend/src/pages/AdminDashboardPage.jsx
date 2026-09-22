@@ -4,8 +4,10 @@ import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
 import { fetchAdminCertifications, fetchAdminReports, fetchAdminStats } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function AdminDashboardPage() {
+  usePageTitle('Admin dashboard')
   const { currentUser } = useAuth()
   const [dashboardStats, setDashboardStats] = useState(null)
   const [certifications, setCertifications] = useState([])

@@ -4,8 +4,10 @@ import SectionHeader from '../components/SectionHeader.jsx'
 import StatCard from '../components/StatCard.jsx'
 import { fetchConversations, fetchListings, fetchSavedListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function CustomerDashboardPage() {
+  usePageTitle('Customer dashboard')
   const { currentUser } = useAuth()
   const [listings, setListings] = useState([])
   const [savedListings, setSavedListings] = useState([])

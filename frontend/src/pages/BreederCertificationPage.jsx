@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { applyAsBreeder, fetchBreederProfile } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 const emptyApplication = {
   bio: '',
@@ -11,6 +12,7 @@ const emptyApplication = {
 }
 
 function BreederCertificationPage() {
+  usePageTitle('Breeder certification')
   const [application, setApplication] = useState(emptyApplication)
   const [breederProfile, setBreederProfile] = useState(null)
   const [isLoading, setIsLoading] = useState(true)

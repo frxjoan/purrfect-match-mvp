@@ -5,6 +5,7 @@ import ImageFilePicker from '../components/ImageFilePicker.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/api.js'
 import { getStoredProfileImage, profileImageFileToDataUrl, setStoredProfileImage } from '../utils/profileImageStorage.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 const emptyProfile = {
   email: '',
@@ -27,6 +28,7 @@ function toProfile(user) {
 }
 
 function CustomerProfilePage() {
+  usePageTitle('Customer profile')
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(emptyProfile)

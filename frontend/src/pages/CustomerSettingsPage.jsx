@@ -1,3 +1,4 @@
+import { usePageTitle } from '../components/Seo.jsx'
 ﻿import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
@@ -13,6 +14,7 @@ const emptySettings = {
 }
 
 function CustomerSettingsPage() {
+  usePageTitle('Account settings')
   const [settings, setSettings] = useState(emptySettings)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)

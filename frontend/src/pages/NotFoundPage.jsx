@@ -1,8 +1,9 @@
 import ActionButton from '../components/ActionButton.jsx'
 import PageHero from '../components/PageHero.jsx'
-import Seo from '../components/Seo.jsx'
+import Seo, { usePageTitle } from '../components/Seo.jsx'
 
 function NotFoundPage() {
+  usePageTitle('Page not found')
   return (
     <>
       <Seo title="Page not found" description="This page could not be found on Purrfect Match." robots="noindex,nofollow" />

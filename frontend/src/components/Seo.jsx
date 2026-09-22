@@ -43,8 +43,12 @@ function absoluteImage(image) {
   }
 }
 
+function formatPageTitle(title) {
+  return title ? `${siteName} - ${title}` : siteName
+}
+
 function applySeo({ title, description, path, image, robots = 'index,follow' }) {
-  const fullTitle = title ? `${title} | ${siteName}` : siteName
+  const fullTitle = formatPageTitle(title)
   const canonical = path && robots === 'index,follow' ? new URL(path, `${siteOrigin}/`).href : ''
   document.title = fullTitle
   document.documentElement.lang = 'en'
@@ -72,6 +76,12 @@ export function RouteSeo() {
   }, [pathname])
 
   return null
+}
+
+export function usePageTitle(title) {
+  useLayoutEffect(() => {
+    document.title = formatPageTitle(title)
+  }, [title])
 }
 
 function Seo({ title, description, image, robots = 'index,follow' }) {

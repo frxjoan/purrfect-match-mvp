@@ -3,6 +3,7 @@ import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchBreederReviews, fetchListings, fetchPublicBreederProfile } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function formatDate(value) {
   if (!value) {
@@ -21,6 +22,7 @@ function getBreederName(profile, fallback) {
 }
 
 function CustomerReviewsPage() {
+  usePageTitle('Customer reviews')
   const { currentUser } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [notice, setNotice] = useState('')

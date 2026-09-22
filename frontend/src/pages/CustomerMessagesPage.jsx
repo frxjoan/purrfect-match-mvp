@@ -1,7 +1,9 @@
+import { usePageTitle } from '../components/Seo.jsx'
 ﻿import { useNavigate } from 'react-router-dom'
 import MessageCenter from '../components/messages/MessageCenter.jsx'
 
 function CustomerMessagesPage() {
+  usePageTitle('Customer messages')
   const navigate = useNavigate()
 
   return (

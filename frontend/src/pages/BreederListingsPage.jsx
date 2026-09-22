@@ -4,6 +4,7 @@ import ImageFilePicker from '../components/ImageFilePicker.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { createListing, deleteListing, fetchBreederProfile, fetchListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 const emptyListingForm = {
   age_months: '',
@@ -45,6 +46,7 @@ function getEditFormFromListing(listing) {
 }
 
 function BreederListingsPage() {
+  usePageTitle('Breeder listings')
   const { currentUser } = useAuth()
   const [breederProfile, setBreederProfile] = useState(currentUser?.breeder_profile ?? null)
   const breederVerified = breederProfile?.certification_status === 'verified' || currentUser?.role === 'admin'

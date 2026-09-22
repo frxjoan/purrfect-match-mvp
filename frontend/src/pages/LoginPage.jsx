@@ -4,6 +4,7 @@ import ActionButton from '../components/ActionButton.jsx'
 import { getPostLoginRedirect } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { loginUser } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 /**
  * Initial controlled login form state.
@@ -26,6 +27,7 @@ const emptyForm = {
  * @returns {JSX.Element} Login options or the selected login form.
  */
 function LoginPage() {
+  usePageTitle('Sign in')
   const { currentUser, signIn } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()

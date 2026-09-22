@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
-import Seo from '../components/Seo.jsx'
+import Seo, { usePageTitle } from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { createBreederReview, deleteReview, fetchBreederReviews, fetchListings, fetchPublicBreederProfile, updateReview } from '../services/api.js'
 import { getStoredProfileImage } from '../utils/profileImageStorage.js'
@@ -43,6 +43,7 @@ function ratingLabel(value) {
 }
 
 function PublicBreederProfilePage() {
+  usePageTitle('Breeder profile')
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()

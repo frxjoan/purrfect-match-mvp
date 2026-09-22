@@ -7,8 +7,10 @@ import ReportListingModal from '../components/ReportListingModal.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchSavedListings, unsaveListing } from '../services/api.js'
 import { applyListingFilters, emptyListingFilters } from '../utils/listingFilters.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function CustomerSavedListingsPage() {
+  usePageTitle('Saved listings')
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()

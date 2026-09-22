@@ -3,12 +3,13 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
-import Seo from '../components/Seo.jsx'
+import Seo, { usePageTitle } from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListingById, startConversation } from '../services/api.js'
 import { getStoredProfileImage } from '../utils/profileImageStorage.js'
 
 function ListingDetailPage() {
+  usePageTitle('Listing details')
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()

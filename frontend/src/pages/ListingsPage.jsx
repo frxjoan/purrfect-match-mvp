@@ -4,12 +4,13 @@ import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
 import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
 import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
-import Seo from '../components/Seo.jsx'
+import Seo, { usePageTitle } from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListings, fetchSavedListings, saveListing, unsaveListing } from '../services/api.js'
 import { applyListingFilters, emptyListingFilters } from '../utils/listingFilters.js'
 
 function ListingsPage() {
+  usePageTitle('Browse cat listings')
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
