@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from urllib.parse import urlsplit
 
 from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -12,6 +13,40 @@ from app.models.saved_listing import SavedListing
 from app.models.user import User
 
 users_bp: Blueprint = Blueprint("users", __name__, url_prefix="/api/v1/users")
+PROFILE_FIELD_LIMITS = {
+    "first_name": 100,
+    "last_name": 100,
+    "phone_number": 30,
+    "location": 150,
+    "profile_picture_url": 2048,
+}
+
+
+def profile_validation_error(message: str) -> tuple[Response, int]:
+    """Return a consistent validation error for profile updates."""
+    return jsonify({
+        "success": False,
+        "error": {
+            "code": "VALIDATION_ERROR",
+            "message": message,
+        },
+    }), 400
+
+
+def is_safe_profile_image_url(value: str) -> bool:
+    """Allow only absolute HTTP(S) image URLs without embedded credentials."""
+    try:
+        parsed = urlsplit(value)
+    except ValueError:
+        return False
+
+    return (
+        parsed.scheme in {"http", "https"}
+        and bool(parsed.hostname)
+        and parsed.username is None
+        and parsed.password is None
+    )
+
 
 
 def get_current_user() -> User | None:
@@ -81,22 +116,42 @@ def update_own_profile() -> Response | tuple[Response, int]:
             },
         }), 404
 
-    data: dict[str, Any] = request.get_json() or {}
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return profile_validation_error("A JSON object is required.")
 
-    allowed_fields: list[str] = [
-        "first_name",
-        "last_name",
-        "phone_number",
-        "location",
-        "profile_picture_url",
-    ]
-
-    for field in allowed_fields:
+    for field, max_length in PROFILE_FIELD_LIMITS.items():
         if field in data:
             value: Any = data[field]
-            if isinstance(value, str):
-                value = value.strip()
-            setattr(user, field, value)
+
+            if value is None and field not in {"first_name", "last_name"}:
+                setattr(user, field, None)
+                continue
+
+            if not isinstance(value, str):
+                return profile_validation_error(
+                    f"{field} must be a string."
+                )
+
+            value = value.strip()
+            if field in {"first_name", "last_name"} and not value:
+                return profile_validation_error(
+                    f"{field} cannot be empty."
+                )
+            if len(value) > max_length:
+                return profile_validation_error(
+                    f"{field} must be {max_length} characters or fewer."
+                )
+            if (
+                field == "profile_picture_url"
+                and value
+                and not is_safe_profile_image_url(value)
+            ):
+                return profile_validation_error(
+                    "profile_picture_url must use an HTTP or HTTPS URL."
+                )
+
+            setattr(user, field, value or None)
 
     db.session.commit()
 

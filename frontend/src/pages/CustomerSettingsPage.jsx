@@ -1,5 +1,5 @@
 import { usePageTitle } from '../components/Seo.jsx'
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/api.js'

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import SafeImage from '../components/SafeImage.jsx'
 import Seo, { usePageTitle } from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { createBreederReview, deleteReview, fetchBreederReviews, fetchListings, fetchPublicBreederProfile, updateReview } from '../services/api.js'
@@ -119,7 +120,7 @@ function PublicBreederProfilePage() {
     [currentUser?.id, reviews],
   )
   const isOwnBreederProfile = Number(currentUser?.breeder_profile?.id) === Number(breederId)
-  const canReview = Boolean(currentUser?.token) && !isOwnBreederProfile && !ownReview
+  const canReview = Boolean(currentUser) && !isOwnBreederProfile && !ownReview
   const displayName = breederProfile?.display_name ?? breederProfile?.business_name ?? 'Breeder profile'
   const ownerName = breederProfile?.owner_name ?? breederProfile?.user?.display_name ?? ''
   const breederAvatarUser = breederProfile?.user ?? { id: breederProfile?.user_id, profile_picture_url: breederProfile?.profile_picture_url }
@@ -132,7 +133,7 @@ function PublicBreederProfilePage() {
   async function handleSubmitReview(event) {
     event.preventDefault()
 
-    if (!currentUser?.token) {
+    if (!currentUser) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }
@@ -245,7 +246,7 @@ function PublicBreederProfilePage() {
       <button className="text-sm font-semibold" onClick={() => navigate(-1)} type="button">Back</button>
       <section className="grid gap-6 rounded-xl border border-black bg-[#fbfbff] p-5 md:grid-cols-[auto_1fr_auto] md:items-center">
         <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border border-black bg-white text-2xl font-semibold text-[#6c5ce7]">
-          {profilePhoto ? <img alt={displayName} className="h-full w-full object-cover" src={profilePhoto} /> : getInitials(displayName)}
+          {profilePhoto ? <SafeImage allowData alt={displayName} className="h-full w-full object-cover" src={profilePhoto} /> : getInitials(displayName)}
         </div>
         <div className="min-w-0">
           <h1 className="text-2xl font-semibold text-slate-950">{displayName}</h1>
@@ -266,7 +267,7 @@ function PublicBreederProfilePage() {
           <div className="mt-5 space-y-4">
             {listings.length ? listings.map((listing) => (
               <article key={listing.id} className="grid gap-4 rounded-lg bg-slate-50 p-4 sm:grid-cols-[6rem_1fr_auto] sm:items-center">
-                {listing.image ? <img alt={listing.title} className="h-24 w-24 rounded-lg object-cover" src={listing.image} /> : <div className="flex h-24 w-24 items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-500">No photo</div>}
+                {listing.image ? <SafeImage alt={listing.title} className="h-24 w-24 rounded-lg object-cover" src={listing.image} /> : <div className="flex h-24 w-24 items-center justify-center rounded-lg border border-dashed border-slate-300 text-xs text-slate-500">No photo</div>}
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-slate-950">{listing.title}</p>
                   <p className="text-sm text-slate-500">{listing.breed} - {listing.location}</p>
@@ -319,7 +320,7 @@ function PublicBreederProfilePage() {
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-xs font-bold text-[#6c5ce7]">
-                          {reviewerAvatar ? <img alt={reviewerName} className="h-full w-full object-cover" src={reviewerAvatar} /> : getInitials(reviewerName)}
+                          {reviewerAvatar ? <SafeImage allowData alt={reviewerName} className="h-full w-full object-cover" src={reviewerAvatar} /> : getInitials(reviewerName)}
                         </div>
                         <p className="truncate font-semibold text-slate-950">{reviewerName}</p>
                       </div>

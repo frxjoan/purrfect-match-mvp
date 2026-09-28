@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import ImageFilePicker from '../components/ImageFilePicker.jsx'
+import SafeImage from '../components/SafeImage.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from '../services/api.js'
 import { getStoredProfileImage, profileImageFileToDataUrl, setStoredProfileImage } from '../utils/profileImageStorage.js'
@@ -34,7 +35,7 @@ function CustomerProfilePage() {
   const [profile, setProfile] = useState(emptyProfile)
   const [profileImageFiles, setProfileImageFiles] = useState([])
   const [storedProfileImage, setStoredProfileImageState] = useState(() => getStoredProfileImage(currentUser))
-  const [isLoading, setIsLoading] = useState(Boolean(currentUser?.token))
+  const [isLoading, setIsLoading] = useState(Boolean(currentUser))
   const [isSaving, setIsSaving] = useState(false)
   const [notice, setNotice] = useState('')
   const selectedProfilePreview = useMemo(() => (profileImageFiles[0] ? URL.createObjectURL(profileImageFiles[0]) : ''), [profileImageFiles])
@@ -120,7 +121,7 @@ function CustomerProfilePage() {
         </button>
         <div className="flex flex-col items-center gap-4">
           <div className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border-2 border-[#c9bfff] bg-[#f8f7fb] text-4xl text-[#8b7cff]">
-            {currentProfileImage ? <img alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
+            {currentProfileImage ? <SafeImage allowData alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
           </div>
           <div className="w-full max-w-xs">
             <ImageFilePicker files={profileImageFiles} onFilesChange={setProfileImageFiles} showPreview={false} />

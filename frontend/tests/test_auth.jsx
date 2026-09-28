@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useContext } from 'react'
@@ -6,10 +7,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { AuthContext, AuthProvider, getPostLoginRedirect, getRoleDashboard } from '../src/context/AuthContext.jsx'
 import LoginPage from '../src/pages/LoginPage.jsx'
 import RegisterPage from '../src/pages/RegisterPage.jsx'
-import { loginUser, registerUser } from '../src/services/api.js'
+import { loginUser, logoutUser, refreshSession, registerUser } from '../src/services/api.js'
 
 vi.mock('../src/services/api.js', () => ({
   loginUser: vi.fn(),
+  logoutUser: vi.fn().mockResolvedValue(undefined),
+  refreshSession: vi.fn().mockRejectedValue(new Error('No refresh session')),
   registerUser: vi.fn(),
 }))
 
@@ -27,7 +30,7 @@ function AuthProbe() {
 }
 
 describe('AuthContext', () => {
-  it('stores and clears the authenticated user', async () => {
+  it('keeps the authenticated user in memory and clears it on logout', async () => {
     const user = userEvent.setup()
     render(<AuthProvider><AuthProbe /></AuthProvider>)
 
@@ -36,20 +39,27 @@ describe('AuthContext', () => {
 
     expect(screen.getByText('breeder@test.dev')).toBeInTheDocument()
     expect(screen.getByText('verified')).toBeInTheDocument()
-    expect(localStorage.getItem('purrfect-match-user')).toContain('breeder@test.dev')
+    expect(localStorage.getItem('purrfect-match-user')).toBeNull()
+    expect(sessionStorage.getItem('purrfect-match-user')).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Sign out' }))
 
     expect(screen.getByText('signed out')).toBeInTheDocument()
+    await waitFor(() => expect(logoutUser).toHaveBeenCalledOnce())
     expect(localStorage.getItem('purrfect-match-user')).toBeNull()
   })
 
-  it('restores the user from localStorage', () => {
-    localStorage.setItem('purrfect-match-user', JSON.stringify({ id: 2, email: 'ada@test.dev', role: 'admin' }))
+  it('restores the user through the refresh cookie without browser storage', async () => {
+    refreshSession.mockResolvedValueOnce({
+      user: { id: 2, email: 'ada@test.dev', role: 'admin' },
+    })
 
     render(<AuthProvider><AuthProbe /></AuthProvider>)
 
-    expect(screen.getByText('ada@test.dev')).toBeInTheDocument()
+    expect(await screen.findByText('ada@test.dev')).toBeInTheDocument()
+    expect(refreshSession).toHaveBeenCalledOnce()
+    expect(localStorage.getItem('purrfect-match-user')).toBeNull()
+    expect(sessionStorage.getItem('purrfect-match-user')).toBeNull()
   })
 
   it('maps roles to their dashboards and onboarding redirects', () => {

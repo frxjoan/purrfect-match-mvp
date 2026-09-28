@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import ImageFilePicker from '../components/ImageFilePicker.jsx'
+import SafeImage from '../components/SafeImage.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchBreederProfile, fetchCurrentUserProfile, updateBreederProfile, updateCurrentUserProfile } from '../services/api.js'
@@ -151,7 +152,7 @@ function BreederProfilePage() {
         <section className="grid gap-4">
           <div className="flex flex-col items-center gap-4">
             <div className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-full border-2 border-[#c9bfff] bg-[#f8f7fb] text-3xl text-[#8b7cff]">
-              {currentProfileImage ? <img alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
+              {currentProfileImage ? <SafeImage allowData alt="Profile" className="h-full w-full object-cover" src={currentProfileImage} /> : 'PM'}
             </div>
             <ImageFilePicker files={profileImageFiles} onFilesChange={setProfileImageFiles} showPreview={false} />
           </div>

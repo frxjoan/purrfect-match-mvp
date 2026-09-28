@@ -72,7 +72,7 @@ function BreederDashboardPage() {
     }
 
     return listings.filter((listing) => Number(listing.breeder_id) === Number(breederProfile.id))
-  }, [breederProfile?.id, listings])
+  }, [breederProfile, listings])
   const breederVerified = isAdminPreview || breederProfile?.certification_status === 'verified'
   const certificationValue = isAdminPreview ? 'Admin preview' : breederVerified ? 'Verified' : 'In review'
   const certificationNote = breederProfile?.id ? 'Breeder profile' : 'No breeder profile'

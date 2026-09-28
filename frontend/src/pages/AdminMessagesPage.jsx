@@ -1,5 +1,5 @@
 import { usePageTitle } from '../components/Seo.jsx'
-﻿import MessageCenter from '../components/messages/MessageCenter.jsx'
+import MessageCenter from '../components/messages/MessageCenter.jsx'
 
 function AdminMessagesPage() {
   usePageTitle('Admin messages')

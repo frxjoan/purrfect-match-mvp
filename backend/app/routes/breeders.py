@@ -6,7 +6,7 @@ from typing import Any
 from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models.breeder_profile import BreederProfile
 from app.models.reviews import Review
 from app.models.user import User
@@ -35,6 +35,7 @@ def parse_rating(value: Any) -> int | None:
 
 
 @breeders_bp.post("/apply")
+@limiter.limit("5 per hour")
 @jwt_required()
 def apply_as_breeder() -> Response | tuple[Response, int]:
     """Submit a breeder certification application for the authenticated user."""
@@ -110,7 +111,7 @@ def apply_as_breeder() -> Response | tuple[Response, int]:
         "success": True,
         "data": {
             "message": "Breeder application submitted successfully.",
-            "breeder_profile": breeder_profile.to_dict(),
+            "breeder_profile": breeder_profile.to_dict(include_private=True),
         },
     }), 201
 
@@ -131,7 +132,7 @@ def get_my_breeder_profile() -> Response | tuple[Response, int]:
     return jsonify({
         "success": True,
         "data": {
-            "breeder_profile": user.breeder_profile.to_dict(),
+            "breeder_profile": user.breeder_profile.to_dict(include_private=True),
         },
     }), 200
 
@@ -167,7 +168,7 @@ def update_my_breeder_profile() -> Response | tuple[Response, int]:
         "success": True,
         "data": {
             "message": "Breeder profile updated successfully.",
-            "breeder_profile": breeder_profile.to_dict(),
+            "breeder_profile": breeder_profile.to_dict(include_private=True),
         },
     }), 200
 
@@ -216,6 +217,7 @@ def list_breeder_reviews(breeder_id: int) -> Response | tuple[Response, int]:
 
 
 @breeders_bp.post("/<int:breeder_id>/reviews")
+@limiter.limit("20 per hour")
 @jwt_required()
 def create_breeder_review(breeder_id: int) -> Response | tuple[Response, int]:
     """Create a review for a breeder profile."""

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
 import ActionButton from '../components/ActionButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
+import SafeImage from '../components/SafeImage.jsx'
 import Seo, { usePageTitle } from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListingById, startConversation } from '../services/api.js'
@@ -64,7 +65,7 @@ function ListingDetailPage() {
   }, [listing])
 
   function requireLoginOrRun(action) {
-    if (!currentUser?.token) {
+    if (!currentUser) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }
@@ -73,7 +74,7 @@ function ListingDetailPage() {
   }
 
   async function handleStartConversation() {
-    if (!currentUser?.token) {
+    if (!currentUser) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }
@@ -143,7 +144,7 @@ function ListingDetailPage() {
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-4">
             <button aria-label="Previous image" className="text-3xl text-slate-900 disabled:opacity-30" disabled={activeImageIndex === 0} onClick={showPreviousImage} type="button">&lt;</button>
             {activeImage ? (
-              <img alt={`${listing.name || listing.title}${listing.breed ? `, ${listing.breed}` : ''}`} className="mx-auto h-56 w-full max-w-lg rounded-lg object-cover" src={activeImage} />
+              <SafeImage alt={`${listing.name || listing.title}${listing.breed ? `, ${listing.breed}` : ''}`} className="mx-auto h-56 w-full max-w-lg rounded-lg object-cover" src={activeImage} />
             ) : (
               <div className="mx-auto flex h-56 w-full max-w-lg items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500">
                 No photo available
@@ -160,7 +161,7 @@ function ListingDetailPage() {
               {listing.breederId ? (
                 <Link className="mt-2 flex items-center gap-3 rounded-xl border border-black bg-white p-3 hover:bg-[#f7f3ff]" to={`/breeders/${listing.breederId}`}>
                   <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-300 bg-[#f8f7fb] text-xs font-semibold text-[#6c5ce7]">
-                    {breederAvatar ? <img alt="" className="h-full w-full object-cover" src={breederAvatar} /> : breederInitials}
+                    {breederAvatar ? <SafeImage allowData alt="" className="h-full w-full object-cover" src={breederAvatar} /> : breederInitials}
                   </span>
                   <span className="min-w-0">
                     <span className="block truncate font-semibold text-slate-950">{listing.breeder || 'Breeder profile'}</span>

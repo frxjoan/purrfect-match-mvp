@@ -88,7 +88,7 @@ function CustomerSavedListingsPage() {
   }
 
   function handleReport(listing) {
-    if (!currentUser?.token) {
+    if (!currentUser) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }

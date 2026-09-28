@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { countActiveListingFilters, emptyListingFilters, getListingFilterOptions } from '../utils/listingFilters.js'
 

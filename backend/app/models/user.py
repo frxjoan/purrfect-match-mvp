@@ -99,7 +99,10 @@ class User(db.Model):
 
     def set_password(self, password: Any) -> None:
         """Hash and store a plain-text password."""
-        self.password_hash = generate_password_hash(password)
+        self.password_hash = generate_password_hash(
+            password,
+            method="scrypt:32768:8:1",
+        )
 
     def check_password(self, password: Any) -> bool:
         """Return whether a plain-text password matches the stored hash."""

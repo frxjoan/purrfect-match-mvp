@@ -3,17 +3,37 @@
 from typing import Any
 
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models.user import User
 from app.models.cat_listing import CatListing
 from app.models.listing_report import ALLOWED_REPORT_REASONS, ListingReport
 from app.models.listing_image import ListingImage
-from app.services.cloudinary_service import upload_listing_image
+from app.services.cloudinary_service import (
+    MAX_LISTING_IMAGE_BYTES,
+    MAX_LISTING_IMAGES,
+    delete_listing_image,
+    upload_listing_image,
+)
 
 listings_bp: Blueprint = Blueprint("listings", __name__, url_prefix="/api/v1/listings")
+MAX_LISTING_REQUEST_BYTES: int = (
+    MAX_LISTING_IMAGES * MAX_LISTING_IMAGE_BYTES + 1024 * 1024
+)
+
+
+def _cleanup_listing_images(image_urls: list[str]) -> None:
+    """Best-effort cleanup for images uploaded before a failed transaction."""
+
+    for image_url in image_urls:
+        try:
+            delete_listing_image(image_url)
+        except Exception:
+            current_app.logger.exception(
+                "Failed to clean up a Cloudinary listing image."
+            )
 
 
 @listings_bp.get("")
@@ -127,6 +147,7 @@ def get_listing(listing_id: int) -> Response | tuple[Response, int]:
 
 
 @listings_bp.post("/<int:listing_id>/reports")
+@limiter.limit("20 per hour")
 @jwt_required()
 def report_listing(listing_id: int) -> Response | tuple[Response, int]:
     """Create a moderation report for a listing."""
@@ -225,6 +246,21 @@ def delete_own_listing(listing_id: int) -> Response | tuple[Response, int]:
             "error": {"message": "You can only delete your own listings."},
         }), 403
 
+    try:
+        for image in listing.images:
+            delete_listing_image(image.image_url)
+    except Exception:
+        current_app.logger.exception(
+            "Cloudinary cleanup failed while deleting listing %s.",
+            listing.id,
+        )
+        return jsonify({
+            "success": False,
+            "error": {
+                "message": "Listing image deletion failed. Please retry.",
+            },
+        }), 502
+
     listing.status = "archived"
     db.session.commit()
 
@@ -238,6 +274,7 @@ def delete_own_listing(listing_id: int) -> Response | tuple[Response, int]:
 
 
 @listings_bp.post("")
+@limiter.limit("10 per hour")
 @jwt_required()
 def create_listing() -> Response | tuple[Response, int]:
     """Create a new listing for a verified breeder."""
@@ -253,6 +290,15 @@ def create_listing() -> Response | tuple[Response, int]:
     if user.breeder_profile.certification_status != "verified":
         return jsonify({"success": False, "error": {"message": "Only verified breeders can create listings."}}), 403
 
+    if (
+        request.content_length is not None
+        and request.content_length > MAX_LISTING_REQUEST_BYTES
+    ):
+        return jsonify({
+            "success": False,
+            "error": {"message": "The listing upload is too large."},
+        }), 413
+
     data = request.form
 
     required_fields: list[str] = ["title", "breed", "age_months", "gender", "price", "location"]
@@ -267,10 +313,22 @@ def create_listing() -> Response | tuple[Response, int]:
             },
         }), 400
 
-    images: list[Any] = request.files.getlist("images")
+    images: list[Any] = [
+        image
+        for image in request.files.getlist("images")
+        if image and image.filename
+    ]
 
     if not images:
         return jsonify({"success": False, "error": {"message": "At least one image is required."}}), 400
+
+    if len(images) > MAX_LISTING_IMAGES:
+        return jsonify({
+            "success": False,
+            "error": {
+                "message": f"A maximum of {MAX_LISTING_IMAGES} images is allowed.",
+            },
+        }), 400
 
     try:
         age_months: int = int(data.get("age_months"))
@@ -293,6 +351,8 @@ def create_listing() -> Response | tuple[Response, int]:
             "error": {"message": "Gender must be 'male' or 'female'."},
         }), 400
 
+    uploaded_image_urls: list[str] = []
+
     try:
         listing = CatListing(
             breeder_id=user.breeder_profile.id,
@@ -311,6 +371,7 @@ def create_listing() -> Response | tuple[Response, int]:
 
         for index, image in enumerate(images):
             image_url: str = upload_listing_image(image)
+            uploaded_image_urls.append(image_url)
 
             listing_image = ListingImage(
                 listing_id=listing.id,
@@ -327,8 +388,17 @@ def create_listing() -> Response | tuple[Response, int]:
             "data": listing.to_dict(),
         }), 201
 
+    except ValueError as exc:
+        db.session.rollback()
+        _cleanup_listing_images(uploaded_image_urls)
+        return jsonify({
+            "success": False,
+            "error": {"message": str(exc)},
+        }), 400
     except Exception:
         db.session.rollback()
+        _cleanup_listing_images(uploaded_image_urls)
+        current_app.logger.exception("Listing creation failed.")
         return jsonify({
             "success": False,
             "error": {"message": "Listing creation failed."},

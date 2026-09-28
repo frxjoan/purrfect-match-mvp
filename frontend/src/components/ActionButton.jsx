@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { isExternalNavigationTarget, sanitizeNavigationTarget } from '../utils/safeUrl.js'
 
 const variants = {
   primary: 'border border-[#4634b6] bg-[#6c5ce7] text-white hover:bg-[#5c4ed1] focus:ring-[#d8d1ff]',
@@ -23,9 +24,25 @@ function ActionButton({
     className,
   ].join(' ')
 
-  if (to && !disabled) {
+  const safeTarget = to ? sanitizeNavigationTarget(to) : ''
+
+  if (safeTarget && !disabled) {
+    if (isExternalNavigationTarget(safeTarget)) {
+      return (
+        <a
+          {...props}
+          className={classes}
+          href={safeTarget}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {children}
+        </a>
+      )
+    }
+
     return (
-      <Link className={classes} to={to} {...props}>
+      <Link className={classes} to={safeTarget} {...props}>
         {children}
       </Link>
     )

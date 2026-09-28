@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import ActionButton from './ActionButton.jsx'
+import SafeImage from './SafeImage.jsx'
 import breederIcon from '../assets/icon/breeder-icon.png'
 
 /**
@@ -16,7 +17,7 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
   return (
     <article className="grid min-h-28 grid-cols-[5rem_1fr_auto] gap-3 rounded-xl border border-black bg-[#fbfbff] p-3 text-xs shadow-sm">
       {listing.image ? (
-        <img alt={`${listing.name || listing.title} ${listing.breed}`} className="h-20 w-20 rounded-lg object-cover" src={listing.image} />
+        <SafeImage alt={`${listing.name || listing.title} ${listing.breed}`} className="h-20 w-20 rounded-lg object-cover" src={listing.image} />
       ) : (
         <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-center text-[10px] text-slate-500">
           No photo
@@ -27,7 +28,7 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
         {listing.breederId ? (
           <Link className="mt-1 inline-flex max-w-full items-center gap-2 text-slate-800 underline-offset-2 hover:underline" to={`/breeders/${listing.breederId}`}>
             <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-white text-[8px] font-bold text-[#6c5ce7]">
-              <img alt="" className="h-full w-full object-cover" src={listing.breederPhoto || breederIcon} />
+              <SafeImage alt="" className="h-full w-full object-cover" src={listing.breederPhoto || breederIcon} />
             </span>
             <span className="truncate">{listing.breeder || 'Breeder profile'}</span>
           </Link>

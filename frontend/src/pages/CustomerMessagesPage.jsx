@@ -1,5 +1,5 @@
 import { usePageTitle } from '../components/Seo.jsx'
-﻿import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import MessageCenter from '../components/messages/MessageCenter.jsx'
 
 function CustomerMessagesPage() {

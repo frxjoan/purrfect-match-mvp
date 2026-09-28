@@ -65,8 +65,8 @@ class BreederProfile(db.Model):
         """Return whether the breeder can create listings."""
         return self.is_verified()
 
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize the model instance into an API-friendly dictionary."""
+    def to_dict(self, include_private: bool = False) -> dict[str, Any]:
+        """Serialize the profile, excluding moderation documents by default."""
         owner_name = None
         profile_picture_url = None
         user: dict[str, Any] | None = None
@@ -85,7 +85,7 @@ class BreederProfile(db.Model):
                 "profile_picture_url": profile_picture_url,
             }
 
-        return {
+        data = {
             "id": self.id,
             "user_id": self.user_id,
             "business_name": self.business_name,
@@ -95,8 +95,6 @@ class BreederProfile(db.Model):
             "bio": self.bio,
             "location": self.location,
             "certification_status": self.certification_status,
-            "certification_document_url": self.certification_document_url,
-            "certification_admin_comment": self.certification_admin_comment,
             "user": user,
             "verified_at": (
                 self.verified_at.isoformat()
@@ -114,3 +112,11 @@ class BreederProfile(db.Model):
                 else None
             ),
         }
+
+        if include_private:
+            data.update({
+                "certification_document_url": self.certification_document_url,
+                "certification_admin_comment": self.certification_admin_comment,
+            })
+
+        return data

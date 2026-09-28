@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import { getPostLoginRedirect } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
-import { loginUser } from '../services/api.js'
+import { loginUser, logoutUser } from '../services/api.js'
 import { usePageTitle } from '../components/Seo.jsx'
 
 /**
@@ -171,10 +171,10 @@ function LoginPage() {
       const user = {
         ...data.user,
         breederVerificationStatus: data.user?.breeder_certification_status ?? data.user?.breeder_profile?.certification_status,
-        token: data.token,
       }
 
       if (user.role !== 'admin' && selectedRole !== 'admin' && user.role !== selectedRole) {
+        await logoutUser()
         setNotice(`This account is registered as ${user.role}. Please choose the matching sign-in option.`)
         return
       }

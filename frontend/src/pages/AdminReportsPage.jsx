@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import SafeImage from '../components/SafeImage.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { deleteAdminListing, fetchAdminReports, fetchListingById, restrictAdminUser, reviewAdminReport } from '../services/api.js'
 import { usePageTitle } from '../components/Seo.jsx'
@@ -373,7 +374,7 @@ function AdminReportsPage() {
                 {listingDetails.images?.length ? (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {listingDetails.images.map((image) => (
-                      <img alt={listingDetails.title} className="h-44 w-full rounded-lg object-cover" key={image.id ?? image.image_url} src={image.image_url} />
+                      <SafeImage alt={listingDetails.title} className="h-44 w-full rounded-lg object-cover" key={image.id ?? image.image_url} src={image.image_url} />
                     ))}
                   </div>
                 ) : null}

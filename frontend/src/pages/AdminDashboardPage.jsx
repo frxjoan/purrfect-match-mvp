@@ -12,14 +12,14 @@ function AdminDashboardPage() {
   const [dashboardStats, setDashboardStats] = useState(null)
   const [certifications, setCertifications] = useState([])
   const [reports, setReports] = useState([])
-  const [isLoading, setIsLoading] = useState(Boolean(currentUser?.token))
+  const [isLoading, setIsLoading] = useState(Boolean(currentUser))
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
     let ignore = false
 
     async function loadDashboard() {
-      if (!currentUser?.token) {
+      if (!currentUser) {
         setNotice('Sign in with an admin account to load dashboard data.')
         setIsLoading(false)
         return
@@ -56,7 +56,7 @@ function AdminDashboardPage() {
     return () => {
       ignore = true
     }
-  }, [currentUser?.token])
+  }, [currentUser])
 
   const stats = useMemo(() => ([
     { label: 'Total users', value: String(dashboardStats?.total_users ?? '-'), note: 'Users' },

@@ -59,7 +59,7 @@ function ListingsPage() {
     let isActive = true
 
     async function loadSavedListings() {
-      if (!currentUser?.token) {
+      if (!currentUser) {
         setSavedListingIds([])
         return
       }
@@ -81,12 +81,12 @@ function ListingsPage() {
     return () => {
       isActive = false
     }
-  }, [currentUser?.token])
+  }, [currentUser])
 
   const filteredListings = useMemo(() => applyListingFilters(listings, query, filters), [filters, listings, query])
 
   function requireLoginOrRun(action) {
-    if (!currentUser?.token) {
+    if (!currentUser) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }

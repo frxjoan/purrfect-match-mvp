@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useId, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import breederIcon from '../assets/icon/breeder-icon.png'
@@ -6,6 +7,7 @@ import logoImage from '../../assets/logo/logo-purrfect-match.png'
 import { getBreederVerificationStatus } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchConversation, fetchConversations } from '../services/api.js'
+import SafeImage from './SafeImage.jsx'
 import { getStoredProfileImage, PROFILE_IMAGE_EVENT } from '../utils/profileImageStorage.js'
 
 const ACTIVE_INTERFACE_STORAGE_KEY = 'purrfect-match-active-interface'
@@ -219,7 +221,7 @@ function MainLayout({ children }) {
     let ignore = false
 
     async function loadUnreadMessages() {
-      if (!currentUser?.token) {
+      if (!currentUser) {
         setHasUnreadMessages(false)
         return
       }
@@ -258,7 +260,7 @@ function MainLayout({ children }) {
       ignore = true
       window.removeEventListener('purrfect-match-messages-unread-change', handleUnreadChange)
     }
-  }, [currentUser?.id, currentUser?.token])
+  }, [currentUser?.id, currentUser])
   useEffect(() => {
     if (!currentUser) {
       setLocalProfileImage('')
@@ -384,7 +386,7 @@ function MainLayout({ children }) {
                 type="button"
               >
                 {avatarImage ? (
-                  <img alt="Profile" className="h-10 w-10 rounded-full object-cover" src={avatarImage} />
+                  <SafeImage allowData alt="Profile" className="h-10 w-10 rounded-full object-cover" src={avatarImage} />
                 ) : currentUser ? (
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-[#eee7ff] text-xs font-bold text-[#553ba8]">{avatarInitials}</span>
                 ) : (

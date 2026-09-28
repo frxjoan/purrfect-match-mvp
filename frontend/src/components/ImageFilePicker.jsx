@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react'
+import SafeImage from './SafeImage.jsx'
 
 const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
@@ -61,13 +62,13 @@ function ImageFilePicker({ existingImageUrl = '', files = [], helperText = '', m
         <div className="grid gap-3 sm:grid-cols-2">
           {previews.map((preview) => (
             <figure className="overflow-hidden rounded-lg border border-slate-200 bg-white" key={`${preview.file.name}-${preview.file.lastModified}`}>
-              <img alt="" className="h-32 w-full object-cover" src={preview.url} />
+              <SafeImage allowBlob alt="" className="h-32 w-full object-cover" src={preview.url} />
               <figcaption className="truncate px-3 py-2 text-xs text-slate-600">{preview.file.name}</figcaption>
             </figure>
           ))}
         </div>
       ) : showPreview && existingImageUrl ? (
-        <img alt="Current profile" className="h-32 w-32 rounded-full border border-slate-200 object-cover" src={existingImageUrl} />
+        <SafeImage allowData alt="Current profile" className="h-32 w-32 rounded-full border border-slate-200 object-cover" src={existingImageUrl} />
       ) : null}
     </div>
   )

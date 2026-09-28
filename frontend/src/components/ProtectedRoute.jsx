@@ -26,8 +26,12 @@ const roleAccess = {
  * @returns {JSX.Element} Protected content or a redirect.
  */
 function ProtectedRoute({ allowedRole = 'customer', children }) {
-  const { currentUser } = useAuth()
+  const { currentUser, isAuthLoading } = useAuth()
   const location = useLocation()
+
+  if (isAuthLoading) {
+    return <p aria-live="polite" role="status">Restoring your session...</p>
+  }
 
   if (!currentUser) {
     return <Navigate replace state={{ from: location.pathname }} to="/login" />

@@ -1,5 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useState } from 'react'
 import ActionButton from '../ActionButton.jsx'
+import SafeImage from '../SafeImage.jsx'
 import breederIcon from '../../assets/icon/breeder-icon.png'
 import customerIcon from '../../assets/icon/customer-icon.png'
 import useAuth from '../../hooks/useAuth.js'
@@ -174,7 +176,7 @@ export function MessageAvatar({ currentUser, person, role = 'customer', label = 
 
   return (
     <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/20 bg-white text-xs font-bold text-[#6c5ce7]">
-      {source ? <img alt={label} className="h-full w-full object-cover" src={source} /> : initials}
+      {source ? <SafeImage allowData alt={label} className="h-full w-full object-cover" src={source} /> : initials}
     </span>
   )
 }
@@ -361,7 +363,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
     let ignore = false
 
     async function loadConversations() {
-      if (!currentUser?.token) {
+      if (!currentUser) {
         setNotice('Sign in to load conversations.')
         setIsLoading(false)
         return
@@ -414,7 +416,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
     let ignore = false
 
     async function loadMessages() {
-      if (!activeConversation || !currentUser?.token) {
+      if (!activeConversation || !currentUser) {
         setMessages([])
         return
       }
@@ -443,7 +445,7 @@ function MessageCenter({ adminMode = false, title = 'Messages', subtitle = 'Conv
     return () => {
       ignore = true
     }
-  }, [activeConversation, currentUser?.token])
+  }, [activeConversation, currentUser])
 
   async function handleSubmit(event) {
     event.preventDefault()

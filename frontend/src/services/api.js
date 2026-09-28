@@ -26,7 +26,7 @@ import axios from 'axios'
  * @property {number} id - Database user id.
  * @property {'customer'|'breeder'|'admin'} role - Role used by ProtectedRoute and the navbar.
  * @property {string} email - User email returned by Flask.
- * @property {string} [token] - JWT stored by AuthContext after login.
+ * The bearer token is held only in this API module's memory.
  * @property {Object} [breeder_profile] - Optional breeder profile returned for breeder accounts.
  */
 
@@ -42,28 +42,134 @@ import axios from 'axios'
  * @property {Object[]} [images] - Raw backend listing images.
  */
 
-const AUTH_STORAGE_KEY = 'purrfect-match-user'
-const LEGACY_AUTH_STORAGE_KEY = 'purrfect-match-demo-user'
-
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   timeout: 10000,
+  withCredentials: true,
 })
 
-api.interceptors.request.use((config) => {
-  try {
-    const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY)
-    const currentUser = storedUser ? JSON.parse(storedUser) : null
+let accessToken = null
+let refreshPromise = null
+let refreshCsrfToken = null
 
-    if (currentUser?.token) {
-      config.headers.Authorization = `Bearer ${currentUser.token}`
-    }
-  } catch {
-    // Ignore malformed session storage and continue unauthenticated.
+export function setAccessToken(token) {
+  accessToken = typeof token === 'string' && token ? token : null
+}
+
+function setRefreshCsrfToken(token) {
+  refreshCsrfToken = typeof token === 'string' && token ? token : null
+}
+
+function stripSessionTokens(user) {
+  if (!user || typeof user !== 'object') {
+    return user
+  }
+
+  const safeUser = { ...user }
+  delete safeUser.access_token
+  delete safeUser.token
+
+  return safeUser
+}
+
+function applySessionPayload(payload) {
+  const token = payload?.access_token ?? payload?.token
+  const csrfToken = payload?.refresh_csrf_token
+
+  if (!token || !csrfToken) {
+    setAccessToken(null)
+    setRefreshCsrfToken(null)
+    throw new Error('Authentication response did not include session tokens.')
+  }
+
+  setAccessToken(token)
+  setRefreshCsrfToken(csrfToken)
+  const safePayload = { ...payload }
+  delete safePayload.access_token
+  delete safePayload.token
+
+  delete safePayload.refresh_csrf_token
+  return { ...safePayload, user: stripSessionTokens(payload.user) }
+}
+
+
+async function ensureRefreshCsrfToken() {
+  if (refreshCsrfToken) {
+    return refreshCsrfToken
+  }
+
+  const response = await api.get('/auth/refresh/csrf', {
+    skipAuthHeader: true,
+    skipAuthRefresh: true,
+  })
+  const csrfToken = getResponseData(response)?.refresh_csrf_token
+
+  if (typeof csrfToken !== 'string' || !csrfToken) {
+    throw new Error('Refresh response did not include a CSRF token.')
+  }
+
+  setRefreshCsrfToken(csrfToken)
+  return csrfToken
+}
+async function requestSessionRefresh() {
+  if (!refreshPromise) {
+
+    refreshPromise = ensureRefreshCsrfToken()
+      .then((csrfToken) => api.post('/auth/refresh', null, {
+        headers: { 'X-CSRF-TOKEN': csrfToken },
+        skipAuthHeader: true,
+        skipAuthRefresh: true,
+      }))
+      .then((response) => applySessionPayload(getResponseData(response)))
+      .catch((error) => {
+        setAccessToken(null)
+        setRefreshCsrfToken(null)
+        throw error
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+
+  return refreshPromise
+}
+
+api.interceptors.request.use((config) => {
+  if (accessToken && !config.skipAuthHeader) {
+    config.headers = config.headers ?? {}
+    config.headers.Authorization = `Bearer ${accessToken}`
   }
 
   return config
 })
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+
+    if (
+      error.response?.status !== 401
+      || !originalRequest
+      || originalRequest._authRetry
+      || originalRequest.skipAuthRefresh
+      || !accessToken
+    ) {
+      return Promise.reject(error)
+    }
+
+    originalRequest._authRetry = true
+
+    try {
+      await requestSessionRefresh()
+      originalRequest.headers = originalRequest.headers ?? {}
+      originalRequest.headers.Authorization = `Bearer ${accessToken}`
+      return api(originalRequest)
+    } catch {
+      return Promise.reject(error)
+    }
+  },
+)
 
 /**
  * Extracts the endpoint payload from the standard Flask response envelope.
@@ -284,8 +390,29 @@ export async function unsaveListing(listingId) {
  * @returns {Promise<{ token: string, user: AuthenticatedUser }>} Authenticated session payload.
  */
 export async function loginUser(credentials) {
-  const response = await api.post('/auth/login', credentials)
-  return getResponseData(response)
+  const response = await api.post('/auth/login', credentials, { skipAuthRefresh: true })
+  return applySessionPayload(getResponseData(response))
+}
+
+export async function refreshSession() {
+  return requestSessionRefresh()
+}
+
+export async function logoutUser() {
+  setAccessToken(null)
+
+  try {
+    const csrfToken = await ensureRefreshCsrfToken()
+    const response = await api.post('/auth/logout', null, {
+      headers: { 'X-CSRF-TOKEN': csrfToken },
+      skipAuthHeader: true,
+      skipAuthRefresh: true,
+    })
+    return getResponseData(response)
+  } finally {
+    setAccessToken(null)
+    setRefreshCsrfToken(null)
+  }
 }
 
 /**
