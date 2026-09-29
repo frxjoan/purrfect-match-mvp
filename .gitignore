@@ -23,6 +23,7 @@ backend/.pytest_cache/
 .env
 .env.*
 !.env.example
+!.env.production.example
 backend/.env
 frontend/.env
 
@@ -35,6 +36,7 @@ pytestdebug.log
 # Docker
 *.pid
 postgres_data/
+backups/
 
 # macOS
 .DS_Store

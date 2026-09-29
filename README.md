@@ -424,6 +424,31 @@ Recommended missing docs:
 
 ## Deployment
 
+The application is not currently deployed. The repository prepares and
+validates a deployment without presenting a production release as completed.
+See `docs/deployment-readiness.md` for the rehearsal procedure, database
+backup and restore commands, and RNCP evidence checklist.
+
+Production-like local files:
+
+- `docker-compose.production.yml`
+- `docker/backend.production.Dockerfile`
+- `docker/frontend.production.Dockerfile`
+- `.env.production.example`
+- `scripts/deployment/preflight.sh`
+- `scripts/deployment/migrate.sh`
+- `scripts/deployment/backup_database.sh`
+- `scripts/deployment/restore_database.sh`
+
+Validate the configuration without deploying:
+
+```bash
+cp .env.production.example .env.production
+# Replace every placeholder first.
+ENV_FILE=.env.production bash scripts/deployment/preflight.sh --configuration-only
+docker compose --env-file .env.production -f docker-compose.production.yml build
+```
+
 ### Backend On Render
 
 The repo includes `render.yaml`, which defines:

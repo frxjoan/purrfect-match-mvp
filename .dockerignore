@@ -1,0 +1,17 @@
+.git
+.gitignore
+.env
+.env.*
+.venv
+.codex-trusted-read
+
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+
+frontend/node_modules
+frontend/dist
+frontend/coverage
+
+backups
+postgres_data
