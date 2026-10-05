@@ -1,9 +1,12 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { fetchAdminUsers, liftAdminUserRestriction, restrictAdminUser } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function AdminUsersPage() {
+  usePageTitle('Admin users')
   const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [notice, setNotice] = useState('')

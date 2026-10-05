@@ -6,7 +6,10 @@ const apiMock = {
   patch: vi.fn(),
   put: vi.fn(),
   delete: vi.fn(),
-  interceptors: { request: { use: vi.fn() } },
+  interceptors: {
+    request: { use: vi.fn() },
+    response: { use: vi.fn() },
+  },
 }
 
 vi.mock('axios', () => ({
@@ -24,6 +27,52 @@ describe('api service helpers', () => {
     apiMock.patch.mockReset()
     apiMock.put.mockReset()
     apiMock.delete.mockReset()
+  })
+
+  it('bootstraps, sends, and rotates the refresh CSRF token', async () => {
+    apiMock.get.mockResolvedValueOnce({
+      data: {
+        data: { refresh_csrf_token: 'csrf-before-refresh' },
+      },
+    })
+    apiMock.post
+      .mockResolvedValueOnce({
+        data: {
+          data: {
+            access_token: 'access-after-refresh',
+            refresh_csrf_token: 'csrf-after-refresh',
+            user: { id: 2, email: 'security@test.com', role: 'customer' },
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: { data: { message: 'Logged out successfully.' } },
+      })
+
+    const session = await service.refreshSession()
+
+    expect(apiMock.get).toHaveBeenCalledWith('/auth/refresh/csrf', {
+      skipAuthHeader: true,
+      skipAuthRefresh: true,
+    })
+    expect(apiMock.post).toHaveBeenNthCalledWith(
+      1,
+      '/auth/refresh',
+      null,
+      {
+        headers: { 'X-CSRF-TOKEN': 'csrf-before-refresh' },
+        skipAuthHeader: true,
+        skipAuthRefresh: true,
+      },
+    )
+    expect(session).toEqual({
+      user: { id: 2, email: 'security@test.com', role: 'customer' },
+    })
+
+    await service.logoutUser()
+    expect(apiMock.post.mock.calls[1][2].headers).toEqual({
+      'X-CSRF-TOKEN': 'csrf-after-refresh',
+    })
   })
 
   it('normalizes listing fields for the UI', () => {

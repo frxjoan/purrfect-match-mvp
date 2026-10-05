@@ -424,6 +424,31 @@ Recommended missing docs:
 
 ## Deployment
 
+The application is not currently deployed. The repository prepares and
+validates a deployment without presenting a production release as completed.
+See `docs/deployment-readiness.md` for the rehearsal procedure, database
+backup and restore commands, and RNCP evidence checklist.
+
+Production-like local files:
+
+- `docker-compose.production.yml`
+- `docker/backend.production.Dockerfile`
+- `docker/frontend.production.Dockerfile`
+- `.env.production.example`
+- `scripts/deployment/preflight.sh`
+- `scripts/deployment/migrate.sh`
+- `scripts/deployment/backup_database.sh`
+- `scripts/deployment/restore_database.sh`
+
+Validate the configuration without deploying:
+
+```bash
+cp .env.production.example .env.production
+# Replace every placeholder first.
+ENV_FILE=.env.production bash scripts/deployment/preflight.sh --configuration-only
+docker compose --env-file .env.production -f docker-compose.production.yml build
+```
+
 ### Backend On Render
 
 The repo includes `render.yaml`, which defines:
@@ -451,7 +476,11 @@ Deploy `frontend/` as the Vite app root and configure:
 
 ```text
 VITE_API_URL=https://<backend-domain>/api/v1
+VITE_SITE_URL=https://<frontend-domain>
 ```
+
+The frontend build uses `VITE_SITE_URL` to generate `sitemap.xml` and the sitemap
+reference in `robots.txt`. See [the SEO checklist](docs/seo.md) for verification.
 
 ## License
 

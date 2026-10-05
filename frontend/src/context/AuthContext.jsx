@@ -1,12 +1,12 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useEffect, useMemo, useState } from 'react'
+import { logoutUser, refreshSession } from '../services/api.js'
 
 /**
  * Authentication context for the React app.
  *
- * This module owns the frontend session state. It restores the Flask login
- * payload from localStorage, exposes the current user to all pages, and keeps
- * the JWT available for api.js so protected Flask endpoints receive the
- * Authorization header.
+ * The access token remains private to api.js. This context restores the user
+ * through the HttpOnly refresh cookie and never persists token material.
  */
 
 const AuthContext = createContext(undefined)
@@ -17,20 +17,6 @@ const roleDashboards = {
   customer: '/customer/dashboard',
   breeder: '/breeder/dashboard',
   admin: '/admin/dashboard',
-}
-
-/**
- * Reads the persisted authenticated user from localStorage.
- *
- * @returns {Object|null} User session object containing the Flask user payload and JWT, or null when no session exists.
- */
-function getStoredUser() {
-  try {
-    const storedUser = window.localStorage.getItem(AUTH_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY)
-    return storedUser ? JSON.parse(storedUser) : null
-  } catch {
-    return null
-  }
 }
 
 /**
@@ -53,15 +39,50 @@ function getRoleDashboard(role) {
  * @param {Object} user - User payload returned by Flask login/register/profile endpoints.
  * @returns {Object} User object normalized for frontend session use.
  */
-function normalizeStoredUser(user) {
-  if (user.role !== 'breeder') {
-    return user
+
+function getBreederVerificationStatus(user) {
+  if (user?.role !== 'breeder') {
+    return null
   }
 
-  return {
-    ...user,
-    breederVerificationStatus: user.breederVerificationStatus ?? user.breeder_profile?.certification_status ?? 'unverified',
+  const status = String(
+    user.breederVerificationStatus
+      ?? user.breeder_certification_status
+      ?? user.breeder_profile?.certification_status
+      ?? user.breederProfile?.certification_status
+      ?? 'unverified',
+  ).toLowerCase()
+
+  return status === 'approved' ? 'verified' : status
+}
+
+function needsBreederCertification(user) {
+  return user?.role === 'breeder' && getBreederVerificationStatus(user) !== 'verified'
+}
+
+function getPostLoginRedirect(user) {
+  if (needsBreederCertification(user)) {
+    return '/breeder/certification'
   }
+
+  if (user?.role === 'breeder') {
+    return '/breeder/dashboard'
+  }
+
+  return '/'
+}
+
+
+function normalizeUser(user) {
+  const safeUser = { ...(user ?? {}) }
+  delete safeUser.access_token
+  delete safeUser.token
+
+  if (safeUser.role !== 'breeder') {
+    return safeUser
+  }
+
+  return { ...safeUser, breederVerificationStatus: getBreederVerificationStatus(safeUser) }
 }
 
 /**
@@ -71,31 +92,61 @@ function normalizeStoredUser(user) {
  * @returns {JSX.Element} React context provider.
  */
 function AuthProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState(getStoredUser)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
 
   useEffect(() => {
-    if (currentUser) {
-      window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(currentUser))
-      window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
-      return
-    }
+    let ignore = false
 
     window.localStorage.removeItem(AUTH_STORAGE_KEY)
     window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
-  }, [currentUser])
+    window.sessionStorage.removeItem(AUTH_STORAGE_KEY)
+    window.sessionStorage.removeItem(LEGACY_AUTH_STORAGE_KEY)
+
+    async function restoreSession() {
+      try {
+        const data = await refreshSession()
+        if (!ignore) {
+          setCurrentUser(data?.user ? normalizeUser(data.user) : null)
+        }
+      } catch {
+        if (!ignore) {
+          setCurrentUser(null)
+        }
+      } finally {
+        if (!ignore) {
+          setIsAuthLoading(false)
+        }
+      }
+    }
+
+    restoreSession()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   const value = useMemo(
     () => ({
       currentUser,
       getRoleDashboard,
+      isAuthLoading,
       isAuthenticated: Boolean(currentUser),
-      signIn: (user) => setCurrentUser(normalizeStoredUser(user)),
-      signOut: () => setCurrentUser(null),
+      signIn: (user) => setCurrentUser(normalizeUser(user)),
+      signOut: async () => {
+        setCurrentUser(null)
+        try {
+          await logoutUser()
+        } catch {
+          // The local session is cleared even when the server is unavailable.
+        }
+      },
     }),
-    [currentUser],
+    [currentUser, isAuthLoading],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export { AuthContext, AuthProvider, getRoleDashboard }
+export { AuthContext, AuthProvider, getBreederVerificationStatus, getPostLoginRedirect, getRoleDashboard, needsBreederCertification }

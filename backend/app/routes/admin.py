@@ -195,7 +195,7 @@ def get_certification_applications() -> Response | tuple[Response, int]:
         "success": True,
         "data": {
             "certifications": [
-                breeder.to_dict() for breeder in pending_breeders
+                breeder.to_dict(include_private=True) for breeder in pending_breeders
             ]
         },
     }), 200
@@ -218,7 +218,7 @@ def get_certification_application(breeder_id: int) -> Response | tuple[Response,
     return jsonify({
         "success": True,
         "data": {
-            "breeder_profile": breeder.to_dict(),
+            "breeder_profile": breeder.to_dict(include_private=True),
         },
     }), 200
 
@@ -248,7 +248,7 @@ def approve_certification(breeder_id: int) -> Response | tuple[Response, int]:
     return jsonify({
         "success": True,
         "data": {
-            "breeder_profile": breeder.to_dict(),
+            "breeder_profile": breeder.to_dict(include_private=True),
         },
     }), 200
 
@@ -288,7 +288,7 @@ def reject_certification(breeder_id: int) -> Response | tuple[Response, int]:
     return jsonify({
         "success": True,
         "data": {
-            "breeder_profile": breeder.to_dict(),
+            "breeder_profile": breeder.to_dict(include_private=True),
         },
     }), 200
 
@@ -484,6 +484,13 @@ def restrict_user(user_id: Any) -> Any:
             "success": False,
             "error": {"message": "User not found."},
         }), 404
+    if user.is_admin():
+        return jsonify({
+            "success": False,
+            "error": {
+                "message": "Administrator accounts cannot be restricted here.",
+            },
+        }), 403
 
     data = request.get_json() or {}
     restriction_type = data.get("restriction_type")
@@ -549,6 +556,13 @@ def lift_user_restriction(user_id: Any) -> Any:
             "success": False,
             "error": {"message": "User not found."},
         }), 404
+    if user.is_admin():
+        return jsonify({
+            "success": False,
+            "error": {
+                "message": "Administrator accounts cannot be modified here.",
+            },
+        }), 403
 
     restriction = AccountRestriction.query.filter_by(email=user.email).first()
 

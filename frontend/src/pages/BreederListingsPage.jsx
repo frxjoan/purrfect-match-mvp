@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import ActionButton from '../components/ActionButton.jsx'
 import ImageFilePicker from '../components/ImageFilePicker.jsx'
+import SafeImage from '../components/SafeImage.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { createListing, deleteListing, fetchBreederProfile, fetchListings } from '../services/api.js'
 import useAuth from '../hooks/useAuth.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 const emptyListingForm = {
   age_months: '',
@@ -45,6 +47,7 @@ function getEditFormFromListing(listing) {
 }
 
 function BreederListingsPage() {
+  usePageTitle('Breeder listings')
   const { currentUser } = useAuth()
   const [breederProfile, setBreederProfile] = useState(currentUser?.breeder_profile ?? null)
   const breederVerified = breederProfile?.certification_status === 'verified' || currentUser?.role === 'admin'
@@ -139,7 +142,7 @@ function BreederListingsPage() {
       return
     }
 
-    if (!currentUser?.token) {
+    if (!currentUser) {
       setNotice('Sign in with a breeder account before creating a listing.')
       return
     }
@@ -165,7 +168,7 @@ function BreederListingsPage() {
   async function handleDelete(listingId) {
     setNotice('')
 
-    if (!currentUser?.token) {
+    if (!currentUser) {
       setNotice('Sign in with a breeder account before deleting a listing.')
       return
     }
@@ -197,7 +200,7 @@ function BreederListingsPage() {
             {!loadingListings && listings.length === 0 ? <p className="text-sm text-slate-500">No listings yet.</p> : null}
             {listings.map((listing) => (
               <article key={listing.id} className="rounded-lg border border-slate-200 p-4">
-                {listing.image ? <img alt="" className="mb-4 h-32 w-full rounded-lg object-cover" src={listing.image} /> : null}
+                {listing.image ? <SafeImage alt="" className="mb-4 h-32 w-full rounded-lg object-cover" src={listing.image} /> : null}
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
                     <p className="font-semibold text-slate-950">{listing.title}</p>

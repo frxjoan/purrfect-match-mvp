@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
 import { approveAdminCertification, fetchAdminCertifications, rejectAdminCertification } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function PendingVerificationPage() {
+  usePageTitle('Pending verification')
   const { breederId } = useParams()
   const [verifications, setVerifications] = useState([])
   const [isLoading, setIsLoading] = useState(true)

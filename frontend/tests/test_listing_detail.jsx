@@ -28,7 +28,7 @@ describe('ListingDetailPage', () => {
       price: 1500,
       summary: 'Playful kitten',
       image: '/cat.png',
-      images: [],
+      images: [{ image_url: '/cat.png' }, { image_url: '/cat-side.png' }],
       breederId: 8,
       breeder: 'Leo Cattery',
       breederPhoto: '/leo.png',
@@ -50,7 +50,13 @@ describe('ListingDetailPage', () => {
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
     await user.click(screen.getByRole('button', { name: 'Share' }))
     expect(writeText).toHaveBeenCalled()
-    expect(screen.getByText('Listing link copied.')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Listing link copied.')
+    expect(screen.getByRole('button', { name: 'Previous image' })).toBeDisabled()
+    const nextImage = screen.getByRole('button', { name: 'Next image' })
+    expect(nextImage).toBeEnabled()
+    await user.click(nextImage)
+    expect(screen.getByText('Image 2 of 2')).toHaveAttribute('aria-live', 'polite')
+    expect(nextImage).toBeDisabled()
   })
 
   it('starts a conversation from the detail page', async () => {

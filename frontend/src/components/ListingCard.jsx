@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import ActionButton from './ActionButton.jsx'
+import SafeImage from './SafeImage.jsx'
 import breederIcon from '../assets/icon/breeder-icon.png'
 
 /**
@@ -16,7 +17,7 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
   return (
     <article className="grid min-h-28 grid-cols-[5rem_1fr_auto] gap-3 rounded-xl border border-black bg-[#fbfbff] p-3 text-xs shadow-sm">
       {listing.image ? (
-        <img alt={`${listing.name || listing.title} ${listing.breed}`} className="h-20 w-20 rounded-lg object-cover" src={listing.image} />
+        <SafeImage alt={`${listing.name || listing.title} ${listing.breed}`} className="h-20 w-20 rounded-lg object-cover" src={listing.image} />
       ) : (
         <div className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-center text-[10px] text-slate-500">
           No photo
@@ -27,7 +28,7 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
         {listing.breederId ? (
           <Link className="mt-1 inline-flex max-w-full items-center gap-2 text-slate-800 underline-offset-2 hover:underline" to={`/breeders/${listing.breederId}`}>
             <span className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/10 bg-white text-[8px] font-bold text-[#6c5ce7]">
-              <img alt="" className="h-full w-full object-cover" src={listing.breederPhoto || breederIcon} />
+              <SafeImage alt="" className="h-full w-full object-cover" src={listing.breederPhoto || breederIcon} />
             </span>
             <span className="truncate">{listing.breeder || 'Breeder profile'}</span>
           </Link>
@@ -37,14 +38,15 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
         {listing.age ? <p className="text-slate-800">{listing.age}</p> : null}
         <p className="truncate text-slate-800">{listing.location}</p>
         <p className="font-semibold text-slate-950">{listing.price.toLocaleString()} EUR</p>
-        <ActionButton className="mt-2 min-h-8 px-3 py-1 text-xs" to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
+        <ActionButton aria-label={`Open listing for ${listing.name || listing.title}`} className="mt-2 min-h-8 px-3 py-1 text-xs" to={`/customer/listings/${listing.id}`} variant="secondary">Open</ActionButton>
       </div>
       <div className="flex flex-col items-end justify-between">
         {listing.status ? <span className="rounded-full bg-[#f7f3ff] px-2 py-1 text-[10px] text-slate-700">{listing.status}</span> : null}
         <div className="flex flex-col items-end gap-2">
           {onToggleSave ? (
             <button
-              aria-label={isSaved ? 'Unsave listing' : 'Save listing'}
+              aria-label={`Save listing for ${listing.name || listing.title}`}
+              aria-pressed={isSaved}
               className="rounded-full border border-black bg-white px-2 py-1 text-[11px] font-semibold"
               onClick={() => onToggleSave(listing.id)}
               type="button"
@@ -53,7 +55,7 @@ function ListingCard({ isSaved = false, listing, onReport, onToggleSave }) {
             </button>
           ) : null}
           {onReport ? (
-            <button className="text-[11px] text-[#ff5f98] underline" onClick={() => onReport(listing)} type="button">
+            <button aria-label={`Report listing for ${listing.name || listing.title}`} className="text-[11px] text-[#9c204f] underline" onClick={() => onReport(listing)} type="button">
               Report
             </button>
           ) : null}

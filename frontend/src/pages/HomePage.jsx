@@ -4,11 +4,13 @@ import CustomerListingGrid from '../components/CustomerListingGrid.jsx'
 import CustomerSearchBar from '../components/CustomerSearchBar.jsx'
 import FloatingMessageButton from '../components/FloatingMessageButton.jsx'
 import ReportListingModal from '../components/ReportListingModal.jsx'
+import Seo, { usePageTitle } from '../components/Seo.jsx'
 import useAuth from '../hooks/useAuth.js'
 import { fetchListings, fetchSavedListings, saveListing, unsaveListing } from '../services/api.js'
 import { applyListingFilters, emptyListingFilters } from '../utils/listingFilters.js'
 
 function HomePage() {
+  usePageTitle('Find your cat')
   const { currentUser } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -57,7 +59,7 @@ function HomePage() {
     let isActive = true
 
     async function loadSavedListings() {
-      if (!currentUser?.token) {
+      if (!currentUser) {
         setSavedListingIds([])
         return
       }
@@ -79,12 +81,12 @@ function HomePage() {
     return () => {
       isActive = false
     }
-  }, [currentUser?.token])
+  }, [currentUser])
 
   const filteredListings = useMemo(() => applyListingFilters(listings, query, filters), [filters, listings, query])
 
   function requireLoginOrRun(action) {
-    if (!currentUser?.token) {
+    if (!currentUser) {
       navigate('/login', { state: { from: location.pathname } })
       return
     }
@@ -111,6 +113,11 @@ function HomePage() {
 
   return (
     <>
+      <Seo title="Find your cat" description="Explore cat listings and connect with verified breeders on Purrfect Match." />
+      <header className="mx-auto mb-8 w-full max-w-6xl">
+        <h1 className="text-2xl font-semibold text-slate-950">Find your cat</h1>
+        <p className="mt-2 text-sm text-slate-600">Meet cats from breeders and find the right companion for your home.</p>
+      </header>
       <div className="mx-auto w-full max-w-6xl space-y-10">
         <CustomerSearchBar filters={filters} listings={listings} onChange={setQuery} onFiltersChange={setFilters} value={query} />
         {loadError ? (

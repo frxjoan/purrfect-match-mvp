@@ -28,3 +28,24 @@ select,
 textarea {
   font: inherit;
 }
+
+:is(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #075c4b;
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border: 2px solid #075c4b;
+  background: white;
+  color: #0f172a;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}

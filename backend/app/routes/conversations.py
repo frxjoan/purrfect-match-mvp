@@ -9,7 +9,7 @@ from flask import Blueprint, Response, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from sqlalchemy import or_
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models.user import User
 from app.models.cat_listing import CatListing
 from app.models.conversation import Conversation
@@ -206,6 +206,7 @@ def list_messages(conversation_id: int) -> Response | tuple[Response, int]:
 
 
 @conversations_bp.post("/<int:conversation_id>/messages")
+@limiter.limit("60 per minute")
 @jwt_required()
 def send_message(conversation_id: int) -> Response | tuple[Response, int]:
     """Create a new message in an accessible conversation."""
@@ -228,13 +229,32 @@ def send_message(conversation_id: int) -> Response | tuple[Response, int]:
             "error": {"message": "Unauthorized to send a message in this conversation."},
         }), 403
 
-    data: dict[str, Any] = request.get_json() or {}
-    content = data.get("content", "").strip()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({
+            "success": False,
+            "error": {"message": "A JSON object is required."},
+        }), 400
+
+    content_value = data.get("content")
+    if not isinstance(content_value, str):
+        return jsonify({
+            "success": False,
+            "error": {"message": "Message content must be a string."},
+        }), 400
+
+    content = content_value.strip()
 
     if not content:
         return jsonify({
             "success": False,
             "error": {"message": "Message content is required."},
+        }), 400
+
+    if len(content) > 2000:
+        return jsonify({
+            "success": False,
+            "error": {"message": "Messages must be 2000 characters or fewer."},
         }), 400
 
     message = Message(

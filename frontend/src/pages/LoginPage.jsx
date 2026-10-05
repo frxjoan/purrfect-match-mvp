@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import { getPostLoginRedirect } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
-import { loginUser } from '../services/api.js'
+import { loginUser, logoutUser } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 /**
  * Initial controlled login form state.
@@ -25,6 +27,7 @@ const emptyForm = {
  * @returns {JSX.Element} Login options or the selected login form.
  */
 function LoginPage() {
+  usePageTitle('Sign in')
   const { currentUser, signIn } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -35,11 +38,28 @@ function LoginPage() {
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [notice, setNotice] = useState('')
+  const emailRef = useRef(null)
+  const passwordRef = useRef(null)
+  const noticeRef = useRef(null)
+  const firstOptionRef = useRef(null)
+  const previousRoleRef = useRef(selectedRole)
   useEffect(() => {
     if (currentUser) {
-      navigate('/', { replace: true })
+      navigate(getPostLoginRedirect(currentUser), { replace: true })
     }
   }, [currentUser, navigate])
+
+  useEffect(() => {
+    if (previousRoleRef.current !== selectedRole) {
+      if (selectedRole) emailRef.current?.focus()
+      else firstOptionRef.current?.focus()
+      previousRoleRef.current = selectedRole
+    }
+  }, [selectedRole])
+
+  useEffect(() => {
+    if (notice) noticeRef.current?.focus()
+  }, [notice])
 
   /**
    * Updates a controlled login input and clears stale validation/server errors.
@@ -75,6 +95,8 @@ function LoginPage() {
 
     if (!form.email.trim()) {
       nextErrors.email = 'Email is required.'
+    } else if (emailRef.current?.validity.typeMismatch) {
+      nextErrors.email = 'Enter a valid email address.'
     }
 
     if (!form.password.trim()) {
@@ -82,6 +104,8 @@ function LoginPage() {
     }
 
     setErrors(nextErrors)
+    if (nextErrors.email) emailRef.current?.focus()
+    else if (nextErrors.password) passwordRef.current?.focus()
     return Object.keys(nextErrors).length === 0
   }
 
@@ -146,17 +170,17 @@ function LoginPage() {
       })
       const user = {
         ...data.user,
-        breederVerificationStatus: data.user?.breeder_profile?.certification_status,
-        token: data.token,
+        breederVerificationStatus: data.user?.breeder_certification_status ?? data.user?.breeder_profile?.certification_status,
       }
 
       if (user.role !== 'admin' && selectedRole !== 'admin' && user.role !== selectedRole) {
+        await logoutUser()
         setNotice(`This account is registered as ${user.role}. Please choose the matching sign-in option.`)
         return
       }
 
       signIn(user)
-      navigate('/', { replace: true })
+      navigate(getPostLoginRedirect(user), { replace: true })
     } catch (error) {
       setNotice(error.response?.data?.error?.message ?? 'Login failed. Check your credentials.')
     } finally {
@@ -168,7 +192,7 @@ function LoginPage() {
     <section className="mx-auto flex min-h-[62vh] w-full max-w-3xl flex-col items-center justify-center rounded-lg border border-black/20 bg-[#eee7ff] px-4 py-12">
       {!selectedRole ? (
         <div className="grid w-full max-w-xs gap-10">
-          <ActionButton className="w-full" onClick={() => chooseRole('breeder')} type="button">
+          <ActionButton className="w-full" onClick={() => chooseRole('breeder')} ref={firstOptionRef} type="button">
             Sign in Breeder
           </ActionButton>
           <ActionButton className="w-full" onClick={() => chooseRole('customer')} type="button">
@@ -184,30 +208,42 @@ function LoginPage() {
             ←
           </button>
           <h1 className="text-center text-xl font-semibold text-slate-950">{getTitle()}</h1>
-          <label className="mt-5 block">
-            <span className="text-sm font-semibold text-slate-700">Email</span>
+          <div className="mt-5">
+            <label className="text-sm font-semibold text-slate-700" htmlFor="login-email">Email (required)</label>
             <input
+              id="login-email"
               className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-[#d8d1ff]"
+              aria-describedby={errors.email ? 'login-email-error' : undefined}
+              aria-invalid={Boolean(errors.email)}
+              autoComplete="email"
               onChange={(event) => updateForm('email', event.target.value)}
+              ref={emailRef}
+              required
               type="email"
               value={form.email}
             />
-            {errors.email ? <span className="mt-1 block text-xs font-semibold text-[#c24b78]">{errors.email}</span> : null}
-          </label>
-          <label className="mt-4 block">
-            <span className="text-sm font-semibold text-slate-700">Password</span>
+            {errors.email ? <span className="mt-1 block text-xs font-semibold text-rose-700" id="login-email-error">{errors.email}</span> : null}
+          </div>
+          <div className="mt-4">
+            <label className="text-sm font-semibold text-slate-700" htmlFor="login-password">Password (required)</label>
             <input
+              id="login-password"
               className="mt-2 w-full rounded-lg border border-black bg-white px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-[#d8d1ff]"
+              aria-describedby={errors.password ? 'login-password-error' : undefined}
+              aria-invalid={Boolean(errors.password)}
+              autoComplete="current-password"
               onChange={(event) => updateForm('password', event.target.value)}
+              ref={passwordRef}
+              required
               type="password"
               value={form.password}
             />
-            {errors.password ? <span className="mt-1 block text-xs font-semibold text-[#c24b78]">{errors.password}</span> : null}
-          </label>
+            {errors.password ? <span className="mt-1 block text-xs font-semibold text-rose-700" id="login-password-error">{errors.password}</span> : null}
+          </div>
           <ActionButton className="mt-6 w-full" disabled={isSubmitting} type="submit">
             {isSubmitting ? 'Signing in...' : getSubmitLabel()}
           </ActionButton>
-          {notice ? <p className="mt-4 text-center text-sm font-semibold text-[#c24b78]">{notice}</p> : null}
+          {notice ? <p className="mt-4 text-center text-sm font-semibold text-rose-700" ref={noticeRef} role="alert" tabIndex={-1}>{notice}</p> : null}
         </form>
       )}
     </section>

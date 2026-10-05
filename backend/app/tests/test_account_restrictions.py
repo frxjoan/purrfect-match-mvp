@@ -287,3 +287,35 @@ def test_admin_rejects_invalid_restriction_type(client: Any, restriction_setup: 
     )
 
     assert response.status_code == 400
+
+
+def test_admin_cannot_restrict_or_lift_an_admin_account(
+    client: Any,
+    app: Any,
+    restriction_setup: Any,
+) -> None:
+    """Administrative accounts cannot disable each other through user tools."""
+    with app.app_context():
+        target_admin = create_user("target-admin@test.com", role="admin")
+        db.session.add(target_admin)
+        db.session.commit()
+        target_admin_id = target_admin.id
+
+    restrict_response = client.post(
+        f"/api/v1/admin/users/{target_admin_id}/restrictions",
+        headers=auth_header(restriction_setup["admin_token"]),
+        json={
+            "restriction_type": "ban",
+            "reason": "Attempted admin takeover.",
+        },
+    )
+    lift_response = client.delete(
+        f"/api/v1/admin/users/{target_admin_id}/restrictions",
+        headers=auth_header(restriction_setup["admin_token"]),
+    )
+
+    assert restrict_response.status_code == 403
+    assert lift_response.status_code == 403
+
+    with app.app_context():
+        assert db.session.get(User, target_admin_id).status == "active"

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
@@ -28,7 +28,7 @@ describe('listings UI', () => {
 
     expect(screen.getByText('Female')).toBeInTheDocument()
     expect(screen.getByText('Mia Cattery')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Save listing' }))
+    await user.click(screen.getByRole('button', { name: 'Save listing for Maine Coon kitten' }))
 
     expect(onToggleSave).toHaveBeenCalledWith(1)
   })
@@ -47,11 +47,26 @@ describe('listings UI', () => {
       />,
     )
 
-    await user.click(screen.getByLabelText('Open listing filters'))
+    const filterButton = screen.getByRole('button', { name: 'Open listing filters' })
+    await user.click(filterButton)
+    expect(filterButton).toHaveAttribute('aria-expanded', 'true')
     await user.selectOptions(screen.getByLabelText('Gender'), 'Female')
     await user.click(screen.getByRole('button', { name: 'Apply filters' }))
 
     expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ gender: 'Female' }))
+    expect(filterButton).toHaveFocus()
+    expect(filterButton).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('closes filters with Escape and returns focus to the trigger', async () => {
+    const user = userEvent.setup()
+    render(<CustomerSearchBar filters={emptyListingFilters} listings={[listing]} onChange={vi.fn()} value="" />)
+    const trigger = screen.getByRole('button', { name: 'Open listing filters' })
+    await user.click(trigger)
+    await user.click(screen.getByRole('combobox', { name: 'Breed' }))
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('combobox', { name: 'Breed' })).not.toBeInTheDocument()
+    expect(trigger).toHaveFocus()
   })
 
   it('keeps search text controlled', async () => {
@@ -59,7 +74,7 @@ describe('listings UI', () => {
     const onChange = vi.fn()
 
     render(<CustomerSearchBar filters={emptyListingFilters} listings={[]} onChange={onChange} value="" />)
-    await user.type(screen.getByPlaceholderText('Orange cat...'), 'bengal')
+    await user.type(screen.getByRole('searchbox', { name: 'Search listings' }), 'bengal')
 
     expect(onChange).toHaveBeenCalledWith('b')
   })

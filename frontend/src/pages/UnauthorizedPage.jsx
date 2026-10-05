@@ -3,8 +3,10 @@ import ActionButton from '../components/ActionButton.jsx'
 import PageHero from '../components/PageHero.jsx'
 import { getRoleDashboard } from '../context/AuthContext.jsx'
 import useAuth from '../hooks/useAuth.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 function UnauthorizedPage() {
+  usePageTitle('Access denied')
   const { currentUser } = useAuth()
   const location = useLocation()
   const dashboard = location.state?.dashboard ?? getRoleDashboard(currentUser?.role)

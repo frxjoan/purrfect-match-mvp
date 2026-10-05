@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import ActionButton from '../components/ActionButton.jsx'
+import SafeImage from '../components/SafeImage.jsx'
 import SectionHeader from '../components/SectionHeader.jsx'
-import { fetchAdminReports, fetchListingById, restrictAdminUser, reviewAdminReport } from '../services/api.js'
+import { deleteAdminListing, fetchAdminReports, fetchListingById, restrictAdminUser, reviewAdminReport } from '../services/api.js'
+import { usePageTitle } from '../components/Seo.jsx'
 
 const reasonLabels = {
   animal_abuse_or_neglect: 'Animal abuse or neglect',
@@ -92,6 +94,7 @@ function getSuspensionExpiry(days) {
 }
 
 function AdminReportsPage() {
+  usePageTitle('Admin reports')
   const { reportId } = useParams()
   const [listingDetailsById, setListingDetailsById] = useState({})
   const [moderationReports, setModerationReports] = useState([])
@@ -101,6 +104,7 @@ function AdminReportsPage() {
   const [listingLoading, setListingLoading] = useState(false)
   const [listingModalReport, setListingModalReport] = useState(null)
   const [listingDetails, setListingDetails] = useState(null)
+  const [deletingListingId, setDeletingListingId] = useState(null)
   const [notice, setNotice] = useState('')
   const [sanction, setSanction] = useState('none')
   const [suspensionDays, setSuspensionDays] = useState('7')
@@ -217,6 +221,46 @@ function AdminReportsPage() {
     }
   }
 
+  async function removeReportedListing(report, { showSuccessNotice = true } = {}) {
+    if (!report?.listing_id) {
+      throw new Error('The reported listing could not be identified.')
+    }
+
+    setDeletingListingId(report.listing_id)
+
+    try {
+      await deleteAdminListing(report.listing_id)
+      setListingDetailsById((currentDetails) => ({
+        ...currentDetails,
+        [report.listing_id]: currentDetails[report.listing_id]
+          ? { ...currentDetails[report.listing_id], status: 'Archived' }
+          : currentDetails[report.listing_id],
+      }))
+
+      if (showSuccessNotice) {
+        setNotice('Listing removed from the public catalogue.')
+      }
+    } finally {
+      setDeletingListingId(null)
+    }
+  }
+
+  async function handleRemoveReportedListing() {
+    if (!activeReport) {
+      return
+    }
+
+    setNotice('')
+    setSanctionError('')
+
+    try {
+      await removeReportedListing(activeReport)
+      await loadReports()
+    } catch (error) {
+      setNotice(error.response?.data?.error?.message ?? error.message ?? 'Listing removal failed.')
+    }
+  }
+
   async function applySanctionAndAccept(event) {
     event.preventDefault()
 
@@ -248,12 +292,14 @@ function AdminReportsPage() {
         })
       }
 
+      await removeReportedListing(activeReport, { showSuccessNotice: false })
+
       await reviewAdminReport(activeReport.id, {
         admin_comment: getRestrictionReason(activeReport, sanction),
         decision: 'accepted',
       })
       setShowSanctionModal(false)
-      setNotice('Report accepted and moderation action applied.')
+      setNotice('Report accepted. Listing removed from the public catalogue.')
       await loadReports()
     } catch (error) {
       setSanctionError(error.response?.data?.error?.message ?? error.message ?? 'Moderation action failed.')
@@ -298,6 +344,9 @@ function AdminReportsPage() {
             </dl>
             <div className="mt-6 flex flex-wrap gap-3">
               <ActionButton onClick={() => openListingModal(activeReport)} variant="secondary">View reported listing</ActionButton>
+              <ActionButton disabled={isModerating || deletingListingId === activeReport.listing_id} onClick={handleRemoveReportedListing} variant="danger">
+                {deletingListingId === activeReport.listing_id ? 'Removing...' : 'Remove listing'}
+              </ActionButton>
               <ActionButton disabled={isModerating} onClick={openAcceptFlow}>Accept report</ActionButton>
               <ActionButton disabled={isModerating} onClick={rejectReport} variant="danger">Reject report</ActionButton>
             </div>
@@ -325,7 +374,7 @@ function AdminReportsPage() {
                 {listingDetails.images?.length ? (
                   <div className="grid gap-3 sm:grid-cols-2">
                     {listingDetails.images.map((image) => (
-                      <img alt={listingDetails.title} className="h-44 w-full rounded-lg object-cover" key={image.id ?? image.image_url} src={image.image_url} />
+                      <SafeImage alt={listingDetails.title} className="h-44 w-full rounded-lg object-cover" key={image.id ?? image.image_url} src={image.image_url} />
                     ))}
                   </div>
                 ) : null}
@@ -349,6 +398,11 @@ function AdminReportsPage() {
                 <div className="rounded-lg bg-slate-50 p-4">
                   <p className="text-sm text-slate-500">Description</p>
                   <p className="mt-1 text-sm font-semibold text-slate-950">{listingDetails.summary || listingDetails.description || 'No description provided.'}</p>
+                </div>
+                <div className="flex justify-end">
+                  <ActionButton disabled={deletingListingId === listingModalReport.listing_id} onClick={handleRemoveReportedListing} type="button" variant="danger">
+                    {deletingListingId === listingModalReport.listing_id ? 'Removing...' : 'Remove listing'}
+                  </ActionButton>
                 </div>
               </div>
             ) : null}

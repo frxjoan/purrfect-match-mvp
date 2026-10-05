@@ -6,6 +6,7 @@ afterEach(() => {
   cleanup()
   vi.clearAllMocks()
   localStorage.clear()
+  sessionStorage.clear()
 })
 
 Object.defineProperty(window, 'matchMedia', {

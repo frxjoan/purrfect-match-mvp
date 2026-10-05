@@ -35,6 +35,7 @@ export function setStoredProfileImage(user, dataUrl) {
     window.localStorage.setItem(key, dataUrl)
     emitProfileImageChange(user, dataUrl)
   } catch {
+    // Storage can be unavailable in private browsing.
   }
 }
 
