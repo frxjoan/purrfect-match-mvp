@@ -16,7 +16,7 @@ set -euo pipefail
 
 API="${API:-http://localhost:5000/api/v1}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE_PATH="${ROOT_DIR}/test/images/cat.png"
+IMAGE_PATH="${ROOT_DIR}/frontend/src/assets/icon/customer-icon.png"
 SUFFIX="$(date +%Y%m%d%H%M%S)-$$"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-purrfect_match}"
